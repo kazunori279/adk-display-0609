@@ -35,3 +35,6 @@ htmlcov/
 dist/
 build/
 *.egg-info/
+
+# Data files (large generated files)
+data/file_desc_emb.csv
