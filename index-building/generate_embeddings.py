@@ -1,3 +1,4 @@
+"""Text embeddings generation using Vertex AI."""
 import vertexai
 from vertexai.language_models import TextEmbeddingInput, TextEmbeddingModel
 
@@ -11,17 +12,19 @@ TEXT_EMB_DIMENSIONALITY = 768
 vertexai.init(project=PROJECT_ID, location=LOCATION)
 text_emb_model = TextEmbeddingModel.from_pretrained(TEXT_EMB_MODEL_NAME)
 
-def generate_text_embeddings(items):
+def generate_text_embeddings(texts):
     """
-    Generate text embeddings for items.
+    Generate text embeddings for texts.
+    
+    Args:
+        texts: List of strings (max 20 items)
     """
-
-    # Combine name and description for embedding input.
-    names: list[str] = [item["name"] + " " + item["description"] for item in items]
+    if len(texts) > 20:
+        raise ValueError(f"Maximum 20 texts allowed, got {len(texts)}")
 
     # Prepare inputs for the text embedding model.
     inputs: list[TextEmbeddingInput] = [
-        TextEmbeddingInput(name, TEXT_EMB_TASK_TYPE) for name in names
+        TextEmbeddingInput(text, TEXT_EMB_TASK_TYPE) for text in texts
     ]
     kwargs = {"output_dimensionality": TEXT_EMB_DIMENSIONALITY}
 
