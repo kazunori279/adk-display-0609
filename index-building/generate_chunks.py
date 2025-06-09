@@ -70,7 +70,7 @@ def process_pdf_to_csv(
     if not document_queries:
         raise RuntimeError("Failed to parse response from Gemini")
 
-    write_queries_to_csv(document_queries, csv_filename)
+    write_queries_to_csv(document_queries, csv_filename, pdf_filename)
     print(f"Processed {pdf_filename} and appended to {csv_filename}")
     print_query_summary(document_queries)
 

@@ -6,7 +6,9 @@ from models import DocumentQueries
 
 
 def write_queries_to_csv(
-    document_queries: DocumentQueries, csv_filename: str = "file_description.csv"
+    document_queries: DocumentQueries, 
+    csv_filename: str = "file_description.csv",
+    pdf_filename: str = None
 ) -> None:
     """Write document queries to a CSV file."""
     csv_path = Path(__file__).parent / csv_filename
@@ -14,6 +16,7 @@ def write_queries_to_csv(
 
     with open(csv_path, "a", newline="", encoding="utf-8") as csvfile:
         fieldnames = [
+            "pdf_filename",
             "description",
             "section_name", 
             "subsection_name",
@@ -29,6 +32,7 @@ def write_queries_to_csv(
             for query_obj in section.queries:
                 writer.writerow(
                     {
+                        "pdf_filename": pdf_filename or "unknown",
                         "description": document_queries.description,
                         "section_name": section.section_name,
                         "subsection_name": section.subsection_name,

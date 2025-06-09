@@ -76,7 +76,7 @@ class TestProcessPdfToCsv:
             rows = list(reader)
 
         # Check headers
-        assert reader.fieldnames == ["description", "section_name", "subsection_name", "subsection_pdf_page_number", "query"]
+        assert reader.fieldnames == ["pdf_filename", "description", "section_name", "subsection_name", "subsection_pdf_page_number", "query"]
 
         # Check data
         assert len(rows) == 3
@@ -90,11 +90,12 @@ class TestProcessPdfToCsv:
         csv_path = Path(__file__).parent.parent / "test_output.csv"
         with open(csv_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(
-                f, fieldnames=["description", "section_name", "subsection_name", "subsection_pdf_page_number", "query"]
+                f, fieldnames=["pdf_filename", "description", "section_name", "subsection_name", "subsection_pdf_page_number", "query"]
             )
             writer.writeheader()
             writer.writerow(
                 {
+                    "pdf_filename": "existing.pdf",
                     "description": "Existing doc",
                     "section_name": "Existing section",
                     "subsection_name": "Existing subsection",
@@ -236,6 +237,7 @@ class TestProcessPdfToCsv:
             rows = list(reader)
 
         assert len(rows) > 0
+        assert all(row["pdf_filename"] for row in rows)
         assert all(row["description"] for row in rows)
         assert all(row["section_name"] for row in rows)
         assert all(row["subsection_name"] for row in rows)

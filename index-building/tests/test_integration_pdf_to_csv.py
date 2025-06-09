@@ -118,7 +118,7 @@ def test_process_pdf_to_csv_integration():
         print(f"📈 CSV contains {len(rows)} rows")
 
         # Verify headers
-        expected_headers = ["description", "section_name", "subsection_name", "subsection_pdf_page_number", "query"]
+        expected_headers = ["pdf_filename", "description", "section_name", "subsection_name", "subsection_pdf_page_number", "query"]
         assert reader.fieldnames == expected_headers, f"Unexpected headers: {reader.fieldnames}"
         print(f"✅ Headers are correct: {expected_headers}")
 
@@ -153,6 +153,7 @@ def test_process_pdf_to_csv_integration():
         print("-" * 80)
         for i, row in enumerate(rows[:5]):
             print(f"Row {i+1}:")
+            print(f"  PDF: {row['pdf_filename']}")
             print(f"  Document: {row['description']}")
             print(f"  Section: {row['section_name']}")
             print(f"  Subsection: {row['subsection_name']}")
