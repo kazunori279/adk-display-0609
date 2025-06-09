@@ -192,3 +192,17 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE (additional)
+*.swp
+*.swo
+
+# App-specific environment files
+app/.env
+
+# Data files (large generated files)
+index-building/data/file_desc_emb.csv
