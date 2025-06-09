@@ -59,8 +59,9 @@ def test_process_pdf_to_csv_integration():
     print(f"📄 Testing with PDF: {test_pdf}")
     print(f"📊 Output CSV: {test_csv}")
 
-    # Clean up any existing test CSV (in main directory)
-    csv_path = Path(__file__).parent.parent / test_csv
+    # Clean up any existing test CSV (in data directory)
+    data_dir = Path(__file__).parent.parent / "data"
+    csv_path = data_dir / test_csv
     if csv_path.exists():
         csv_path.unlink()
         print("🗑️  Removed existing test CSV")

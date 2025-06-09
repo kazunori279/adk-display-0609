@@ -11,7 +11,11 @@ def write_queries_to_csv(
     pdf_filename: str = None
 ) -> None:
     """Write document queries to a CSV file."""
-    csv_path = Path(__file__).parent / csv_filename
+    # Ensure data directory exists
+    data_dir = Path(__file__).parent / "data"
+    data_dir.mkdir(exist_ok=True)
+    
+    csv_path = data_dir / csv_filename
     file_exists = csv_path.exists()
 
     with open(csv_path, "a", newline="", encoding="utf-8") as csvfile:

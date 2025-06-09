@@ -32,3 +32,94 @@ python -m pytest -v
 ```
 
 Note: Integration tests require a valid `GOOGLE_API_KEY` in the `.env` file and will consume API quota.
+
+## Usage
+
+### Generating CSV from PDF Files
+
+This system processes PDF documents and generates search queries for RAG (Retrieval-Augmented Generation) systems. The output includes subsection-level granularity with PDF source tracking.
+
+#### Option 1: Process All PDFs (Recommended for Large Datasets)
+
+Process all PDF files in the `resources/` directory using multithreaded processing:
+
+```bash
+python process_all_pdfs.py
+```
+
+**Features:**
+- **10 concurrent threads** for fast processing
+- **Automatic error handling** and retry logic
+- **Progress tracking** with detailed output
+- **Error logging** to `processing_errors.log`
+
+**Output:** 
+- `data/file_description.csv` - Main CSV with all queries
+- `data/pdf_mapping.txt` - Maps numbered files to original names
+- `data/processing_errors.log` - Any processing errors
+
+#### Option 2: Process Single PDF
+
+Process a specific PDF file:
+
+```bash
+python -c "
+from generate_chunks import process_pdf_to_csv
+result = process_pdf_to_csv('001.pdf', 'output.csv')
+print(f'Generated {sum(len(s.queries) for s in result.sections)} queries')
+"
+```
+
+#### Option 3: Custom Processing
+
+For custom query counts or specific requirements:
+
+```python
+from generate_chunks import process_pdf_to_csv
+
+# Process with custom number of queries per section
+result = process_pdf_to_csv(
+    pdf_filename='001.pdf',
+    csv_filename='custom_output.csv', 
+    queries_per_section=25  # Default: 50
+)
+```
+
+### CSV Output Format
+
+The generated CSV contains the following columns:
+
+| Column | Description |
+|--------|-------------|
+| `pdf_filename` | Source PDF file (e.g., "001.pdf") |
+| `description` | Brief description of the document |
+| `section_name` | Main section title |
+| `subsection_name` | Specific subsection within the section |
+| `subsection_pdf_page_number` | Page number where subsection starts |
+| `query` | Generated search query in Japanese |
+
+### PDF File Management
+
+PDF files are automatically renamed to numbered format (001.pdf - 070.pdf) for efficient processing. The mapping between numbered files and original descriptive names is maintained in `data/pdf_mapping.txt`.
+
+### Configuration
+
+Adjust query generation in `gemini_utils.py`:
+
+- **Default:** 50 queries per section (production)
+- **Testing:** 10 queries per section (faster)
+- **Timeout handling:** Automatic fallback between Gemini models
+
+### Performance
+
+- **Multithreading:** 10x faster processing with concurrent threads
+- **Rate limiting:** Built-in delays to respect API limits  
+- **Memory efficient:** Streams results directly to CSV
+- **Error recovery:** Automatic retry for failed PDFs
+
+### Troubleshooting
+
+1. **API Key Issues:** Ensure `GOOGLE_API_KEY` is set in `.env`
+2. **PDF Not Found:** Check that PDF files exist in `resources/` directory
+3. **Processing Errors:** Review `data/processing_errors.log` for details
+4. **Rate Limits:** Built-in delays handle most rate limiting automatically

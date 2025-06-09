@@ -90,7 +90,10 @@ def main():
 
     # Write error log if there were any errors
     if errors:
-        error_log_path = Path(__file__).parent / "processing_errors.log"
+        # Ensure data directory exists
+        data_dir = Path(__file__).parent / "data"
+        data_dir.mkdir(exist_ok=True)
+        error_log_path = data_dir / "processing_errors.log"
         with open(error_log_path, "w", encoding="utf-8") as f:
             f.write(f"PDF Processing Errors Report (Multithreaded)\n")
             f.write(f"Total files processed: {len(pdf_files)}\n")
@@ -99,16 +102,16 @@ def main():
             f.write("=" * 50 + "\n\n")
             for error in errors:
                 f.write(f"{error}\n")
-        print(f"\n❌ {len(errors)//2} files had errors - see processing_errors.log")
+        print(f"\n❌ {len(errors)//2} files had errors - see data/processing_errors.log")
 
     print("\n" + "=" * 50)
     print("Processing complete!")
     print(f"✓ Successfully processed: {success_count}/{len(pdf_files)} files")
     if errors:
-        print(f"✗ Failed: {len(errors)//2} files (logged to processing_errors.log)")
+        print(f"✗ Failed: {len(errors)//2} files (logged to data/processing_errors.log)")
     else:
         print("✓ All files processed successfully!")
-    print("Results saved to: file_description.csv")
+    print("Results saved to: data/file_description.csv")
 
 
 if __name__ == "__main__":

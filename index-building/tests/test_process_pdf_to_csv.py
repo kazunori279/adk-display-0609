@@ -23,8 +23,8 @@ class TestProcessPdfToCsv:
     @pytest.fixture(autouse=True)
     def setup_and_teardown(self):
         """Setup and cleanup for tests."""
-        # Setup: Remove test CSV file if it exists (in main directory)
-        test_csv = Path(__file__).parent.parent / "test_output.csv"
+        # Setup: Remove test CSV file if it exists (in data directory)
+        test_csv = Path(__file__).parent.parent / "data" / "test_output.csv"
         if test_csv.exists():
             test_csv.unlink()
 
@@ -66,8 +66,8 @@ class TestProcessPdfToCsv:
         # Verify the result
         assert result == mock_document_queries
 
-        # Verify CSV file was created with correct content (in main directory)
-        csv_path = Path(__file__).parent.parent / "test_output.csv"
+        # Verify CSV file was created with correct content (in data directory)
+        csv_path = Path(__file__).parent.parent / "data" / "test_output.csv"
         assert csv_path.exists()
 
         # Read and verify CSV content
@@ -86,8 +86,10 @@ class TestProcessPdfToCsv:
 
     def test_process_pdf_appends_to_existing_csv(self):
         """Test that processing a PDF appends to an existing CSV file."""
-        # Create initial CSV file (in main directory)
-        csv_path = Path(__file__).parent.parent / "test_output.csv"
+        # Create initial CSV file (in data directory)
+        data_dir = Path(__file__).parent.parent / "data"
+        data_dir.mkdir(exist_ok=True)
+        csv_path = data_dir / "test_output.csv"
         with open(csv_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(
                 f, fieldnames=["pdf_filename", "description", "section_name", "subsection_name", "subsection_pdf_page_number", "query"]
@@ -227,8 +229,8 @@ class TestProcessPdfToCsv:
         assert result.description
         assert len(result.sections) > 0
 
-        # Verify CSV was created (in main directory)
-        csv_path = Path(__file__).parent.parent / "test_integration_output.csv"
+        # Verify CSV was created (in data directory)
+        csv_path = Path(__file__).parent.parent / "data" / "test_integration_output.csv"
         assert csv_path.exists()
 
         # Read and verify CSV has content
