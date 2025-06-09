@@ -12,6 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""FastAPI backend server for ADK streaming application.
+
+This module provides a FastAPI web server that handles real-time communication
+between clients and Google ADK agents using Server-Sent Events (SSE) and HTTP endpoints.
+"""
+
 import os
 import json
 import base64
@@ -35,7 +41,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from google_search_agent.agent import root_agent
+from app.google_search_agent.agent import root_agent
 
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
 
@@ -137,7 +143,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-STATIC_DIR = Path("static")
+STATIC_DIR = Path(__file__).parent / "static"
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # Store active sessions
@@ -173,7 +179,7 @@ async def sse_endpoint(user_id: int, is_audio: str = "false"):
         try:
             async for data in agent_to_client_sse(live_events):
                 yield data
-        except Exception as e:
+        except (ConnectionError, RuntimeError) as e:
             print(f"Error in SSE stream: {e}")
         finally:
             cleanup()
