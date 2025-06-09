@@ -30,7 +30,7 @@ def main():
         # Clean up
         csv_path.unlink()
 
-    except Exception as e:
+    except (ValueError, FileNotFoundError, RuntimeError) as e:
         print(f"✗ Error: {e}")
 
 

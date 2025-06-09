@@ -103,7 +103,6 @@ class TestGenerateChunksIntegration:
         captured_response = None
 
         # Import necessary modules
-        from google import genai  # pylint: disable=import-outside-toplevel
         from google.genai.models import Models  # pylint: disable=import-outside-toplevel
 
         # Store the original generate_content method

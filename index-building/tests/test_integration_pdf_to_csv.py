@@ -17,15 +17,14 @@ from dotenv import load_dotenv
 
 # Add parent directory to path so we can import generate_chunks
 sys.path.insert(0, str(Path(__file__).parent))
-from generate_chunks import process_pdf_to_csv
-from models import DocumentQueries
-from gemini_utils import (
+from models import DocumentQueries  # pylint: disable=wrong-import-position
+from gemini_utils import (  # pylint: disable=wrong-import-position
     create_gemini_client,
     upload_pdf,
     get_test_rag_prompt,
     generate_with_fallback,
 )
-from csv_utils import write_queries_to_csv, print_query_summary
+from csv_utils import write_queries_to_csv, print_query_summary  # pylint: disable=wrong-import-position
 
 
 def test_process_pdf_to_csv_integration():
@@ -111,7 +110,7 @@ def test_process_pdf_to_csv_integration():
         assert csv_path.exists(), "CSV file was not created"
 
         # Read and verify CSV content
-        print(f"\n📊 Verifying CSV file content...")
+        print("\n📊 Verifying CSV file content...")
         with open(csv_path, "r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             rows = list(reader)
@@ -183,14 +182,13 @@ def main():
     print("PDF to CSV Integration Test")
     print("=" * 50)
 
-    success = test_process_pdf_to_csv_integration()
-
-    print("\n" + "=" * 50)
-    if success:
+    try:
+        test_process_pdf_to_csv_integration()
+        print("\n" + "=" * 50)
         print("✅ TEST PASSED")
         sys.exit(0)
-    else:
-        print("❌ TEST FAILED")
+    except (AssertionError, ValueError, FileNotFoundError, RuntimeError) as e:
+        print(f"\n❌ TEST FAILED: {e}")
         sys.exit(1)
 
 

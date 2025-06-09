@@ -27,7 +27,7 @@ def main():
         print(f"\n[{i}/{len(pdf_files)}] Processing: {pdf_filename}")
 
         try:
-            result = process_pdf_to_csv(pdf_filename)
+            process_pdf_to_csv(pdf_filename)
             print(f"✓ Successfully processed {pdf_filename}")
 
             # Add a small delay to avoid rate limiting
@@ -35,13 +35,13 @@ def main():
                 print("Waiting 2 seconds before next file...")
                 time.sleep(2)
 
-        except Exception as e:
+        except (ValueError, FileNotFoundError, RuntimeError) as e:
             print(f"✗ Error processing {pdf_filename}: {e}")
             continue
 
     print("\n" + "=" * 50)
     print("Processing complete!")
-    print(f"Results saved to: file_description.csv")
+    print("Results saved to: file_description.csv")
 
 
 if __name__ == "__main__":
