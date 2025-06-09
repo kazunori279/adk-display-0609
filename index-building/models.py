@@ -14,7 +14,8 @@ class QuerySection(BaseModel):
     """Model for a section containing multiple queries."""
 
     section_name: str
-    pdf_page_number: int
+    subsection_name: str
+    subsection_pdf_page_number: int
     queries: List[GeneratedQuery]
 
 

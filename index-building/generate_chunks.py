@@ -15,7 +15,7 @@ def main():
     """Main function to process PDF and generate explanation."""
     client = create_gemini_client()
     uploaded_file = upload_pdf(client, DEFAULT_PDF_FILENAME)
-    prompt = get_rag_prompt()
+    prompt = get_rag_prompt(50)  # Use 50 queries per section for main execution
     response = generate_with_fallback(client, uploaded_file, prompt, DocumentQueries)
 
     # Process the structured response
@@ -40,13 +40,18 @@ def main():
             print(f"{i}. {query_obj.query}")
 
 
-def process_pdf_to_csv(pdf_filename: str, csv_filename: str = "file_description.csv"):
+def process_pdf_to_csv(
+    pdf_filename: str,
+    csv_filename: str = "file_description.csv",
+    queries_per_section: int = 50
+):
     """
     Process a PDF file with Gemini and append results to a CSV file.
 
     Args:
         pdf_filename: Name of the PDF file to process (in resources directory)
         csv_filename: Name of the CSV file to append to (default: "file_description.csv")
+        queries_per_section: Number of queries to generate per section (default: 50)
 
     Returns:
         DocumentQueries: The parsed document queries object
@@ -58,7 +63,7 @@ def process_pdf_to_csv(pdf_filename: str, csv_filename: str = "file_description.
     """
     client = create_gemini_client()
     uploaded_file = upload_pdf(client, pdf_filename)
-    prompt = get_rag_prompt()
+    prompt = get_rag_prompt(queries_per_section)
     response = generate_with_fallback(client, uploaded_file, prompt, DocumentQueries)
 
     document_queries = response.parsed

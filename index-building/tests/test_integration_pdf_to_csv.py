@@ -21,7 +21,7 @@ from models import DocumentQueries  # pylint: disable=wrong-import-position
 from gemini_utils import (  # pylint: disable=wrong-import-position
     create_gemini_client,
     upload_pdf,
-    get_test_rag_prompt,
+    get_rag_prompt,
     generate_with_fallback,
 )
 from csv_utils import write_queries_to_csv, print_query_summary  # pylint: disable=wrong-import-position
@@ -70,7 +70,7 @@ def test_process_pdf_to_csv_integration():
         print("\n🚀 Processing PDF with Gemini API using test prompt...")
         client = create_gemini_client()
         uploaded_file = upload_pdf(client, test_pdf)
-        prompt = get_test_rag_prompt()  # Use test prompt with 10 queries per section
+        prompt = get_rag_prompt(10)  # Use 10 queries per section for tests
         response = generate_with_fallback(client, uploaded_file, prompt, DocumentQueries)
 
         document_queries = response.parsed
@@ -118,7 +118,7 @@ def test_process_pdf_to_csv_integration():
         print(f"📈 CSV contains {len(rows)} rows")
 
         # Verify headers
-        expected_headers = ["description", "section_name", "pdf_page_number", "query"]
+        expected_headers = ["description", "section_name", "subsection_name", "subsection_pdf_page_number", "query"]
         assert reader.fieldnames == expected_headers, f"Unexpected headers: {reader.fieldnames}"
         print(f"✅ Headers are correct: {expected_headers}")
 
@@ -155,7 +155,8 @@ def test_process_pdf_to_csv_integration():
             print(f"Row {i+1}:")
             print(f"  Document: {row['description']}")
             print(f"  Section: {row['section_name']}")
-            print(f"  Page: {row['pdf_page_number']}")
+            print(f"  Subsection: {row['subsection_name']}")
+            print(f"  Page: {row['subsection_pdf_page_number']}")
             print(f"  Query: {row['query']}")
         if len(rows) > 5:
             print(f"... and {len(rows) - 5} more rows")

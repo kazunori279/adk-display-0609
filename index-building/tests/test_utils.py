@@ -32,7 +32,8 @@ def create_sample_document_queries():
         sections=[
             QuerySection(
                 section_name="Section 1",
-                pdf_page_number=1,
+                subsection_name="Subsection 1A",
+                subsection_pdf_page_number=1,
                 queries=[
                     GeneratedQuery(query="テストクエリ1"),
                     GeneratedQuery(query="テストクエリ2"),
@@ -40,7 +41,8 @@ def create_sample_document_queries():
             ),
             QuerySection(
                 section_name="Section 2",
-                pdf_page_number=2,
+                subsection_name="Subsection 2A",
+                subsection_pdf_page_number=2,
                 queries=[GeneratedQuery(query="テストクエリ3")],
             ),
         ],
@@ -53,7 +55,12 @@ def create_large_sample_document_queries():
     for i in range(3):
         queries = [GeneratedQuery(query=f"テストクエリ{j}") for j in range(5)]
         sections.append(
-            QuerySection(section_name=f"Section {i+1}", pdf_page_number=i + 1, queries=queries)
+            QuerySection(
+                section_name=f"Section {i+1}", 
+                subsection_name=f"Subsection {i+1}A",
+                subsection_pdf_page_number=i + 1, 
+                queries=queries
+            )
         )
 
     return DocumentQueries(description="Large test document", sections=sections)
@@ -88,13 +95,13 @@ def run_gemini_test_with_pdf(test_pdf):
     from gemini_utils import (  # pylint: disable=import-outside-toplevel
         create_gemini_client,
         upload_pdf,
-        get_test_rag_prompt,
+        get_rag_prompt,
         generate_with_fallback,
     )
 
     client = create_gemini_client()
     uploaded_file = upload_pdf(client, test_pdf)
-    prompt = get_test_rag_prompt()  # Use test prompt with 10 queries per section
+    prompt = get_rag_prompt(10)  # Use 10 queries per section for tests
     response = generate_with_fallback(client, uploaded_file, prompt, DocumentQueries)
 
     return response.parsed

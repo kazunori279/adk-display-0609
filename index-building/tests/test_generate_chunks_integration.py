@@ -19,7 +19,7 @@ from models import DocumentQueries, QuerySection, GeneratedQuery
 from gemini_utils import (
     create_gemini_client,
     upload_pdf,
-    get_test_rag_prompt,
+    get_rag_prompt,
     generate_with_fallback,
 )
 
@@ -48,7 +48,7 @@ class TestGenerateChunksIntegration:
         try:
             client = create_gemini_client()
             uploaded_file = upload_pdf(client, test_pdf)
-            prompt = get_test_rag_prompt()  # Use test prompt with 10 queries per section
+            prompt = get_rag_prompt(10)  # Use 10 queries per section for tests
             response = generate_with_fallback(client, uploaded_file, prompt, DocumentQueries)
 
             document_queries = response.parsed
@@ -124,7 +124,7 @@ class TestGenerateChunksIntegration:
             # Run custom test with smaller PDF and test prompt
             client = create_gemini_client()
             uploaded_file = upload_pdf(client, test_pdf)
-            prompt = get_test_rag_prompt()  # Use test prompt with 10 queries per section
+            prompt = get_rag_prompt(10)  # Use 10 queries per section for tests
             response = generate_with_fallback(client, uploaded_file, prompt, DocumentQueries)
             captured_response = response.parsed
         except RuntimeError as e:

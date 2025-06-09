@@ -27,31 +27,31 @@ def upload_pdf(client: genai.Client, pdf_filename: str):
     return client.files.upload(file=pdf_path, config={"mime_type": "application/pdf"})
 
 
-def get_rag_prompt() -> str:
-    """Return the standard RAG system prompt."""
+def get_rag_prompt(queries_per_section: int = 50) -> str:
+    """Return a RAG system prompt with configurable number of queries per section.
+    
+    Args:
+        queries_per_section: Number of queries to generate per section (default: 50)
+    """
+    total_example = queries_per_section * 9  # Example with 9 sections
     return (
         "I'm developing a RAG system using this document. "
         "This document is written for a specific item or service. "
         "Describe it in Japanese in UNDER 10 words and output as 'description'. "
-        "Then, for EACH section of this document, generate 100 search queries in Japanese "
-        "that would be issued from the users of this RAG system. That means if there are "
-        "9 sections, I expect 900 queries total (100 queries per section). "
-        "For each section, also identify the PDF page number where that section starts "
-        "and output as 'pdf_page_number' (as an integer, e.g., 1, 2, 5)."
+        f"Then, for EACH section of this document, generate {queries_per_section} search queries "
+        "in Japanese that would be issued from the users of this RAG system. "
+        f"That means if there are 9 sections, I expect {total_example} queries total "
+        f"({queries_per_section} queries per section). "
+        "For each section, provide: 'section_name' (main section title), "
+        "'subsection_name' (specific subsection or topic within the section), "
+        "and 'subsection_pdf_page_number' (page number where this subsection starts, "
+        "as an integer, e.g., 1, 2, 5)."
     )
 
 
 def get_test_rag_prompt() -> str:
     """Return a test RAG system prompt with fewer queries for faster testing."""
-    return (
-        "I'm developing a RAG system using this document. "
-        "This document is written for a specific item or service. "
-        "Describe it in Japanese in UNDER 10 words and output as 'description'. "
-        "Then, for EACH section of this document, generate 10 search queries in Japanese "
-        "that would be issued from the users of this RAG system. "
-        "For each section, also identify the PDF page number where that section starts "
-        "and output as 'pdf_page_number' (as an integer, e.g., 1, 2, 5)."
-    )
+    return get_rag_prompt(queries_per_section=10)
 
 
 def generate_with_fallback(

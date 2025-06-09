@@ -76,7 +76,7 @@ class TestProcessPdfToCsv:
             rows = list(reader)
 
         # Check headers
-        assert reader.fieldnames == ["description", "section_name", "pdf_page_number", "query"]
+        assert reader.fieldnames == ["description", "section_name", "subsection_name", "subsection_pdf_page_number", "query"]
 
         # Check data
         assert len(rows) == 3
@@ -90,14 +90,15 @@ class TestProcessPdfToCsv:
         csv_path = Path(__file__).parent.parent / "test_output.csv"
         with open(csv_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(
-                f, fieldnames=["description", "section_name", "pdf_page_number", "query"]
+                f, fieldnames=["description", "section_name", "subsection_name", "subsection_pdf_page_number", "query"]
             )
             writer.writeheader()
             writer.writerow(
                 {
                     "description": "Existing doc",
                     "section_name": "Existing section",
-                    "pdf_page_number": 1,
+                    "subsection_name": "Existing subsection",
+                    "subsection_pdf_page_number": 1,
                     "query": "既存のクエリ",
                 }
             )
@@ -112,7 +113,8 @@ class TestProcessPdfToCsv:
             sections=[
                 QuerySection(
                     section_name="New Section",
-                    pdf_page_number=1,
+                    subsection_name="New Subsection",
+                    subsection_pdf_page_number=1,
                     queries=[GeneratedQuery(query="新しいクエリ")],
                 )
             ],
@@ -203,14 +205,14 @@ class TestProcessPdfToCsv:
         from gemini_utils import (
             create_gemini_client,
             upload_pdf,
-            get_test_rag_prompt,
+            get_rag_prompt,
             generate_with_fallback,
         )
         from csv_utils import write_queries_to_csv
 
         client = create_gemini_client()
         uploaded_file = upload_pdf(client, test_pdf)
-        prompt = get_test_rag_prompt()  # Use test prompt with 10 queries per section
+        prompt = get_rag_prompt(10)  # Use 10 queries per section for tests
         response = generate_with_fallback(client, uploaded_file, prompt, DocumentQueries)
 
         result = response.parsed
@@ -236,7 +238,8 @@ class TestProcessPdfToCsv:
         assert len(rows) > 0
         assert all(row["description"] for row in rows)
         assert all(row["section_name"] for row in rows)
-        assert all(row["pdf_page_number"] for row in rows)
+        assert all(row["subsection_name"] for row in rows)
+        assert all(row["subsection_pdf_page_number"] for row in rows)
         assert all(row["query"] for row in rows)
 
         # Cleanup

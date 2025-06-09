@@ -13,7 +13,13 @@ def write_queries_to_csv(
     file_exists = csv_path.exists()
 
     with open(csv_path, "a", newline="", encoding="utf-8") as csvfile:
-        fieldnames = ["description", "section_name", "pdf_page_number", "query"]
+        fieldnames = [
+            "description",
+            "section_name", 
+            "subsection_name",
+            "subsection_pdf_page_number",
+            "query"
+        ]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         if not file_exists:
@@ -25,7 +31,8 @@ def write_queries_to_csv(
                     {
                         "description": document_queries.description,
                         "section_name": section.section_name,
-                        "pdf_page_number": section.pdf_page_number,
+                        "subsection_name": section.subsection_name,
+                        "subsection_pdf_page_number": section.subsection_pdf_page_number,
                         "query": query_obj.query,
                     }
                 )
@@ -44,4 +51,7 @@ def print_query_summary(document_queries: DocumentQueries) -> None:
 
     for section in document_queries.sections:
         query_count = len(section.queries)
-        print(f"  - {section.section_name} (p.{section.pdf_page_number}): {query_count} queries")
+        print(
+            f"  - {section.section_name} > {section.subsection_name} "
+            f"(p.{section.subsection_pdf_page_number}): {query_count} queries"
+        )
