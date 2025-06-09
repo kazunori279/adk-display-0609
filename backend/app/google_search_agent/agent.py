@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Google Search Agent configuration for ADK application.
+
+This module defines the root agent that uses Google Search tools to answer questions.
+"""
+
 from google.adk.agents import Agent
 from google.adk.tools import google_search  # Import the tool
 

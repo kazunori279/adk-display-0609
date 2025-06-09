@@ -12,6 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""FastAPI backend server for ADK streaming application.
+
+This module provides a FastAPI web server that handles real-time communication
+between clients and Google ADK agents using Server-Sent Events (SSE) and HTTP endpoints.
+"""
+
 import os
 import json
 import base64
@@ -173,7 +179,7 @@ async def sse_endpoint(user_id: int, is_audio: str = "false"):
         try:
             async for data in agent_to_client_sse(live_events):
                 yield data
-        except Exception as e:
+        except (ConnectionError, RuntimeError) as e:
             print(f"Error in SSE stream: {e}")
         finally:
             cleanup()
