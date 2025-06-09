@@ -4,7 +4,14 @@
       <AppHeader />
       
       <div class="gap-1 px-6 flex flex-1 justify-center py-5">
-        <ChatSidebar @send-message="handleSendMessage" />
+        <ChatSidebar 
+          @send-message="handleSendMessage" 
+          @start-audio="handleStartAudio"
+          @stop-audio="handleStopAudio"
+          :messages="messages"
+          :is-connected="isConnected"
+          :is-audio-enabled="isAudioEnabled"
+        />
         <MainContent @select-item="handleSelectItem" />
       </div>
     </div>
@@ -15,11 +22,20 @@
 import AppHeader from './components/AppHeader.vue'
 import ChatSidebar from './components/ChatSidebar.vue'
 import MainContent from './components/MainContent.vue'
+import { useADKStreaming } from './composables/useADKStreaming.js'
+
+const { sendTextMessage, startAudio, stopAudio, isAudioEnabled, isConnected, messages } = useADKStreaming()
 
 const handleSendMessage = (message) => {
-  console.log('Message sent:', message)
-  // Here you would integrate with the ADK backend
-  // For now, just log the message
+  sendTextMessage(message)
+}
+
+const handleStartAudio = () => {
+  startAudio()
+}
+
+const handleStopAudio = () => {
+  stopAudio()
 }
 
 const handleSelectItem = (item) => {

@@ -8,6 +8,9 @@
       </div>
       <h2 class="text-text-primary text-lg font-bold leading-tight tracking-[-0.015em]">ADK Home AI</h2>
     </div>
+    <div class="text-sm text-gray-600">
+      Streaming Voice & Text AI Assistant
+    </div>
   </header>
 </template>
 
