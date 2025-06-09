@@ -1,4 +1,5 @@
 """Utility functions for Gemini API operations."""
+
 import os
 from pathlib import Path
 from typing import Union
@@ -23,38 +24,44 @@ def upload_pdf(client: genai.Client, pdf_filename: str):
         raise FileNotFoundError(f"PDF file not found: {pdf_path}")
 
     print(f"Uploading file: {pdf_path}")
-    return client.files.upload(
-        file=pdf_path,
-        config={"mime_type": "application/pdf"}
-    )
+    return client.files.upload(file=pdf_path, config={"mime_type": "application/pdf"})
 
 
 def get_rag_prompt() -> str:
     """Return the standard RAG system prompt."""
-    return ("I'm developing a RAG system using this document. "
-            "This document is written for a specific item or service. "
-            "Describe it in Japanese in UNDER 10 words and output as 'description'. "
-            "Then, for EACH section of this document, generate 100 search queries in Japanese "
-            "that would be issued from the users of this RAG system. That means if there are "
-            "9 sections, I expect 900 queries total (100 queries per section).")
+    return (
+        "I'm developing a RAG system using this document. "
+        "This document is written for a specific item or service. "
+        "Describe it in Japanese in UNDER 10 words and output as 'description'. "
+        "Then, for EACH section of this document, generate 100 search queries in Japanese "
+        "that would be issued from the users of this RAG system. That means if there are "
+        "9 sections, I expect 900 queries total (100 queries per section). "
+        "For each section, also identify the PDF page number where that section starts "
+        "and output as 'pdf_page_number' (as an integer, e.g., 1, 2, 5)."
+    )
 
 
 def get_test_rag_prompt() -> str:
     """Return a test RAG system prompt with fewer queries for faster testing."""
-    return ("I'm developing a RAG system using this document. "
-            "This document is written for a specific item or service. "
-            "Describe it in Japanese in UNDER 10 words and output as 'description'. "
-            "Then, for EACH section of this document, generate 10 search queries in Japanese "
-            "that would be issued from the users of this RAG system.")
+    return (
+        "I'm developing a RAG system using this document. "
+        "This document is written for a specific item or service. "
+        "Describe it in Japanese in UNDER 10 words and output as 'description'. "
+        "Then, for EACH section of this document, generate 10 search queries in Japanese "
+        "that would be issued from the users of this RAG system. "
+        "For each section, also identify the PDF page number where that section starts "
+        "and output as 'pdf_page_number' (as an integer, e.g., 1, 2, 5)."
+    )
 
 
-def generate_with_fallback(client: genai.Client, uploaded_file,
-                          prompt: str, response_schema: Union[dict, type]):
+def generate_with_fallback(
+    client: genai.Client, uploaded_file, prompt: str, response_schema: Union[dict, type]
+):
     """Generate content with model fallback logic."""
     models_to_try = [
         "gemini-2.5-pro-preview-06-05",
         "gemini-2.0-flash-preview-0514",
-        "gemini-1.5-flash"
+        "gemini-1.5-flash",
     ]
 
     print("Sending to Gemini...")
@@ -66,7 +73,7 @@ def generate_with_fallback(client: genai.Client, uploaded_file,
                 config={
                     "response_mime_type": "application/json",
                     "response_schema": response_schema,
-                }
+                },
             )
             print(f"Successfully used model: {model_name}")
             return response

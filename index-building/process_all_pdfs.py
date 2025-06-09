@@ -15,30 +15,30 @@ from generate_chunks import process_pdf_to_csv
 def main():
     """Process all PDFs in the resources directory."""
     resources_dir = Path(__file__).parent / "resources"
-    
+
     # Get all PDF files
-    pdf_files = sorted([f for f in os.listdir(resources_dir) if f.endswith('.pdf')])
-    
+    pdf_files = sorted([f for f in os.listdir(resources_dir) if f.endswith(".pdf")])
+
     print(f"Found {len(pdf_files)} PDF files to process")
     print("=" * 50)
-    
+
     # Process each PDF
     for i, pdf_filename in enumerate(pdf_files, 1):
         print(f"\n[{i}/{len(pdf_files)}] Processing: {pdf_filename}")
-        
+
         try:
             result = process_pdf_to_csv(pdf_filename)
             print(f"✓ Successfully processed {pdf_filename}")
-            
+
             # Add a small delay to avoid rate limiting
             if i < len(pdf_files):
                 print("Waiting 2 seconds before next file...")
                 time.sleep(2)
-                
+
         except Exception as e:
             print(f"✗ Error processing {pdf_filename}: {e}")
             continue
-    
+
     print("\n" + "=" * 50)
     print("Processing complete!")
     print(f"Results saved to: file_description.csv")

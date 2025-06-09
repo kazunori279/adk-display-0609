@@ -1,4 +1,5 @@
 """Common utilities for testing."""
+
 from unittest.mock import Mock
 from models import DocumentQueries, QuerySection, GeneratedQuery
 
@@ -25,16 +26,18 @@ def create_sample_document_queries():
         sections=[
             QuerySection(
                 section_name="Section 1",
+                pdf_page_number=1,
                 queries=[
                     GeneratedQuery(query="テストクエリ1"),
-                    GeneratedQuery(query="テストクエリ2")
-                ]
+                    GeneratedQuery(query="テストクエリ2"),
+                ],
             ),
             QuerySection(
-                section_name="Section 2", 
-                queries=[GeneratedQuery(query="テストクエリ3")]
-            )
-        ]
+                section_name="Section 2",
+                pdf_page_number=2,
+                queries=[GeneratedQuery(query="テストクエリ3")],
+            ),
+        ],
     )
 
 
@@ -43,15 +46,11 @@ def create_large_sample_document_queries():
     sections = []
     for i in range(3):
         queries = [GeneratedQuery(query=f"テストクエリ{j}") for j in range(5)]
-        sections.append(QuerySection(
-            section_name=f"Section {i+1}",
-            queries=queries
-        ))
-    
-    return DocumentQueries(
-        description="Large test document",
-        sections=sections
-    )
+        sections.append(
+            QuerySection(section_name=f"Section {i+1}", pdf_page_number=i + 1, queries=queries)
+        )
+
+    return DocumentQueries(description="Large test document", sections=sections)
 
 
 def create_mock_pdf_path():

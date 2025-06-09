@@ -13,7 +13,7 @@ def main():
     """Main function to test PDF to CSV processing."""
     # Example: Process the waste separation guide PDF
     pdf_filename = "waste_separation_guide.pdf"
-    
+
     try:
         print(f"Processing {pdf_filename}...")
         result = process_pdf_to_csv(pdf_filename)
