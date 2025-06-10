@@ -112,7 +112,7 @@ python create_embeddings_csv.py
 
 **Input:** `data/file_description.csv` (generated from PDF processing)
 
-**Output:** `data/file_desc_emb.csv` (simplified format with filename and embeddings only)
+**Output:** `data/file_desc_emb.csv` (simplified format with filename, page number, and embeddings)
 
 **Embedding Details:**
 
@@ -157,11 +157,12 @@ The input CSV from PDF processing contains the following columns:
 
 ### Output CSV Format (file_desc_emb.csv)
 
-The output CSV with embeddings contains only:
+The output CSV with embeddings contains:
 
 | Column | Description |
 |--------|-------------|
 | `pdf_filename` | Source PDF file (e.g., "001.pdf") |
+| `subsection_pdf_page_number` | Page number where subsection starts |
 | `embeddings` | Vector embeddings (128 dimensions, JSON format) |
 
 ### PDF File Management

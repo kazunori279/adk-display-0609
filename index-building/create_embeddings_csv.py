@@ -206,26 +206,27 @@ def generate_embeddings_multithreaded(texts: List[str],
 
 def write_embeddings_csv(rows: List[Dict[str, str]],
                         embeddings: List[List[float]], output_path: Path):
-    """Write the new CSV file with filename and embeddings columns only."""
+    """Write the new CSV file with filename, page number, and embeddings columns."""
     if len(rows) != len(embeddings):
         raise ValueError(f"Mismatch: {len(rows)} rows but {len(embeddings)} embeddings")
 
-    # Only include filename and embeddings columns
-    fieldnames = ['pdf_filename', 'embeddings']
+    # Include filename, page number, and embeddings columns
+    fieldnames = ['pdf_filename', 'subsection_pdf_page_number', 'embeddings']
 
     with open(output_path, 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
 
         for row, embedding in zip(rows, embeddings):
-            # Create new row with only filename and embeddings
+            # Create new row with filename, page number, and embeddings
             new_row = {
                 'pdf_filename': row.get('pdf_filename', ''),
+                'subsection_pdf_page_number': row.get('subsection_pdf_page_number', ''),
                 'embeddings': json.dumps(embedding)
             }
             writer.writerow(new_row)
 
-    print(f"✓ Wrote {len(rows):,} rows with filename and embeddings to {output_path}")
+    print(f"✓ Wrote {len(rows):,} rows with filename, page number, and embeddings to {output_path}")
 
 
 def main():
@@ -278,7 +279,7 @@ def main():
         write_embeddings_csv(rows, embeddings, output_csv)
 
         print(f"\n✅ Successfully created {output_csv}")
-        print(f"   Output columns: pdf_filename, embeddings")
+        print(f"   Output columns: pdf_filename, subsection_pdf_page_number, embeddings")
         print(f"   Total rows: {len(rows):,}")
         print(f"   Embedding dimensions: 128")
 
