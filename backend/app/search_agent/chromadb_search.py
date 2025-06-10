@@ -125,13 +125,19 @@ def load_document_embeddings(limit: int = None) -> List[Tuple[str, str, List[flo
 
                 documents.append((pdf_filename, pdf_description, embedding))
 
-        # Add to ChromaDB collection
+        # Add to ChromaDB collection in batches to avoid batch size limits
         if embeddings_list:
-            collection.add(
-                embeddings=embeddings_list,
-                metadatas=metadatas,
-                ids=ids
-            )
+            batch_size = 5000  # ChromaDB max batch size is around 5461
+            for i in range(0, len(embeddings_list), batch_size):
+                batch_embeddings = embeddings_list[i:i + batch_size]
+                batch_metadatas = metadatas[i:i + batch_size]
+                batch_ids = ids[i:i + batch_size]
+                
+                collection.add(
+                    embeddings=batch_embeddings,
+                    metadatas=batch_metadatas,
+                    ids=batch_ids
+                )
 
     except (FileNotFoundError, KeyError, ValueError) as exc:
         print(f"Error loading embeddings: {exc}")
@@ -155,7 +161,7 @@ def dot_product_similarity(vec1: List[float], vec2: List[float]) -> float:
     return sum(a * b for a, b in zip(vec1, vec2))
 
 
-def find_document(search_query: str, limit: int = None) -> List[Tuple[str, str, float]]:
+def find_document(search_query: str, limit: int = 10000) -> List[Tuple[str, str, float]]:
     """Find top 3 documents most similar to the query using ChromaDB.
 
     Args:
@@ -248,8 +254,8 @@ def reset_collection():
     if client:
         try:
             client.delete_collection(COLLECTION_NAME)
-        except ValueError:
-            pass  # Collection doesn't exist
+        except (ValueError, Exception):
+            pass  # Collection doesn't exist or other error
     _COLLECTION = None
 
 
