@@ -30,7 +30,7 @@ def generate_text_embedding(text: str) -> List[float]:
         # Use the existing generate_text_embeddings function (takes a list)
         embeddings = generate_text_embeddings([text])
         return embeddings[0] if embeddings else []
-    except (ValueError, RuntimeError, ConnectionError) as e:
+    except Exception as e:
         print(f"Error generating embedding: {e}")
         return []
 
@@ -42,7 +42,7 @@ def load_document_embeddings(limit: int = None) -> List[Tuple[str, str, List[flo
         limit: Maximum number of documents to load (None for all)
 
     Returns:
-        List of tuples containing (filename, description, embedding_vector)
+        List of tuples containing (filename, page_info, embedding_vector)
     """
     documents = []
 
@@ -54,7 +54,9 @@ def load_document_embeddings(limit: int = None) -> List[Tuple[str, str, List[flo
                     break
 
                 pdf_filename = row['pdf_filename']
-                pdf_description = row['description']
+                page_number = row['subsection_pdf_page_number']
+                # Create a description from filename and page
+                pdf_description = f"{pdf_filename} (page {page_number})"
                 # Parse the embedding string as a Python list
                 embedding_str = row['embeddings']
                 embedding = ast.literal_eval(embedding_str)

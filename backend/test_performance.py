@@ -18,6 +18,12 @@ def test_performance():
         query_embedding = generate_text_embedding(query)
         embedding_time = time.time() - start
         print(f"   ✓ Generated {len(query_embedding)} dimensions in {embedding_time:.3f}s")
+        if len(query_embedding) == 128:
+            print("   ✓ Using new 128-dimensional embeddings")
+        elif len(query_embedding) == 768:
+            print("   ⚠️  Still using old 768-dimensional embeddings")
+        else:
+            print(f"   ? Unknown embedding dimension: {len(query_embedding)}")
         
         # Test 2: Document loading (limited)
         print("\n2. Testing document loading (first 100 docs)...")

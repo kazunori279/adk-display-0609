@@ -86,10 +86,10 @@ class TestLoadDocumentEmbeddings:
     
     def test_load_valid_csv(self):
         """Test loading valid CSV file."""
-        # Create temporary CSV file
-        csv_content = """pdf_filename,description,section_name,subsection_name,subsection_pdf_page_number,query,embeddings
-001.pdf,Test document 1,Section 1,Subsection 1,1,Test query 1,"[0.1, 0.2, 0.3]"
-002.pdf,Test document 2,Section 2,Subsection 2,2,Test query 2,"[0.4, 0.5, 0.6]"
+        # Create temporary CSV file with new schema
+        csv_content = """pdf_filename,subsection_pdf_page_number,embeddings
+001.pdf,1,"[0.1, 0.2, 0.3]"
+002.pdf,2,"[0.4, 0.5, 0.6]"
 """
         
         with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
@@ -104,8 +104,8 @@ class TestLoadDocumentEmbeddings:
         Path(temp_path).unlink()
         
         assert len(result) == 2
-        assert result[0] == ("001.pdf", "Test document 1", [0.1, 0.2, 0.3])
-        assert result[1] == ("002.pdf", "Test document 2", [0.4, 0.5, 0.6])
+        assert result[0] == ("001.pdf", "001.pdf (page 1)", [0.1, 0.2, 0.3])
+        assert result[1] == ("002.pdf", "002.pdf (page 2)", [0.4, 0.5, 0.6])
     
     def test_load_nonexistent_file(self):
         """Test loading non-existent CSV file."""
@@ -146,10 +146,10 @@ class TestFindDocument:
         
         # Mock document embeddings
         mock_documents = [
-            ("doc1.pdf", "Document 1", [1.0, 0.0, 0.0]),  # Perfect match
-            ("doc2.pdf", "Document 2", [0.5, 0.5, 0.0]),  # Partial match
-            ("doc3.pdf", "Document 3", [0.0, 1.0, 0.0]),  # No match
-            ("doc4.pdf", "Document 4", [0.8, 0.2, 0.0]),  # Good match
+            ("doc1.pdf", "doc1.pdf (page 1)", [1.0, 0.0, 0.0]),  # Perfect match
+            ("doc2.pdf", "doc2.pdf (page 1)", [0.5, 0.5, 0.0]),  # Partial match
+            ("doc3.pdf", "doc3.pdf (page 1)", [0.0, 1.0, 0.0]),  # No match
+            ("doc4.pdf", "doc4.pdf (page 1)", [0.8, 0.2, 0.0]),  # Good match
         ]
         mock_load.return_value = mock_documents
         
@@ -188,8 +188,8 @@ class TestFindDocument:
         """Test when fewer than 3 documents exist."""
         mock_generate.return_value = [1.0, 0.0, 0.0]
         mock_documents = [
-            ("doc1.pdf", "Document 1", [1.0, 0.0, 0.0]),
-            ("doc2.pdf", "Document 2", [0.5, 0.5, 0.0]),
+            ("doc1.pdf", "doc1.pdf (page 1)", [1.0, 0.0, 0.0]),
+            ("doc2.pdf", "doc2.pdf (page 1)", [0.5, 0.5, 0.0]),
         ]
         mock_load.return_value = mock_documents
         
