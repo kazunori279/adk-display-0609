@@ -14,6 +14,7 @@ from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
+from dotenv import load_dotenv
 
 from google.genai.types import Content, Part
 from google.adk.runners import InMemoryRunner
@@ -22,6 +23,9 @@ from google.adk.agents.run_config import RunConfig
 
 from app.search_agent.agent import root_agent
 from app.search_agent.chromadb_search import find_document_tool
+
+# Load environment variables from backend/.env file
+load_dotenv()
 
 
 class MockEvent:
@@ -150,9 +154,9 @@ class TestAgentChromaDBIntegration:
 
     async def test_agent_uses_search_tool_real_adk(self, agent_helper, mock_chromadb_data):
         """Test that agent uses the search tool with real ADK integration."""
-        # Skip if API key not available
+        # Skip if API key not available in .env file
         if not os.getenv('GOOGLE_API_KEY'):
-            pytest.skip("GOOGLE_API_KEY not set - skipping real ADK agent test")
+            pytest.skip("GOOGLE_API_KEY not found in .env file - skipping real ADK agent test")
 
         # Send a query that should trigger the document search tool
         query = "How do I set up the air conditioner in my apartment?"
@@ -327,9 +331,9 @@ class TestAgentRealIntegration:
 
     async def test_real_agent_with_chromadb_integration(self, agent_helper):
         """Test real agent integration with ChromaDB search tool."""
-        # Skip if API key not available
+        # Skip if API key not available in .env file
         if not os.getenv('GOOGLE_API_KEY'):
-            pytest.skip("GOOGLE_API_KEY not set - skipping real agent integration test")
+            pytest.skip("GOOGLE_API_KEY not found in .env file - skipping real agent test")
 
         try:
             # Test with a specific apartment-related query
