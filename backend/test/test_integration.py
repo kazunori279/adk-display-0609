@@ -257,7 +257,7 @@ async def server_fixture():
     server_manager = ServerManager()
 
     # Mock the agent-related imports to avoid dependency issues in tests
-    with patch('app.google_search_agent.agent.root_agent') as mock_agent:
+    with patch('app.search_agent.agent.root_agent') as mock_agent:
         # Configure mock agent
         mock_agent.return_value = MagicMock()
 
