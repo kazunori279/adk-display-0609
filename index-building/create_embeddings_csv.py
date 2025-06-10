@@ -144,7 +144,7 @@ def generate_embeddings_multithreaded(texts: List[str],
                         completed_count += 1
                 else:
                     # Add empty embeddings for failed batch to maintain alignment
-                    empty_embedding = [0.0] * 768
+                    empty_embedding = [0.0] * 128
                     for batch_index in batch_indices:
                         all_embeddings[batch_index] = empty_embedding
                         error_count += 1

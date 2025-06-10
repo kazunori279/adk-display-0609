@@ -7,7 +7,7 @@ LOCATION = "us-central1"
 
 TEXT_EMB_MODEL_NAME = "text-multilingual-embedding-002"
 TEXT_EMB_TASK_TYPE = "SEMANTIC_SIMILARITY"
-TEXT_EMB_DIMENSIONALITY = 768
+TEXT_EMB_DIMENSIONALITY = 128
 
 vertexai.init(project=PROJECT_ID, location=LOCATION)
 text_emb_model = TextEmbeddingModel.from_pretrained(TEXT_EMB_MODEL_NAME)

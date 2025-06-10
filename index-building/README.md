@@ -117,7 +117,7 @@ python create_embeddings_csv.py
 **Embedding Details:**
 
 - **Model:** `text-multilingual-embedding-002` (Vertex AI)
-- **Dimensions:** 768
+- **Dimensions:** 128
 - **Task Type:** `SEMANTIC_SIMILARITY`
 - **Input:** Concatenated "description + query" text
 
@@ -154,7 +154,7 @@ The generated CSV contains the following columns:
 | `subsection_name` | Specific subsection within the section |
 | `subsection_pdf_page_number` | Page number where subsection starts |
 | `query` | Generated search query in Japanese |
-| `embeddings` | Vector embeddings (768 dimensions, JSON format) |
+| `embeddings` | Vector embeddings (128 dimensions, JSON format) |
 
 ### PDF File Management
 
