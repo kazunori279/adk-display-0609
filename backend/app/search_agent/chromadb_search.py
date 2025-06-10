@@ -8,13 +8,14 @@ This module provides the same functionality as vector_search.py but uses ChromaD
 
 import ast
 import csv
+import time
 from pathlib import Path
 from typing import List, Tuple
 import uuid
+import asyncio
 
 import chromadb
 from chromadb.config import Settings
-from google.adk.tools import FunctionTool
 
 from .generate_embeddings import generate_text_embeddings
 
@@ -25,6 +26,9 @@ CSV_FILE_PATH = Path(__file__).parent / "file_desc_emb.csv"
 _CLIENT = None
 _COLLECTION = None
 COLLECTION_NAME = "document_embeddings"
+
+# Global queue for client messages
+client_message_queue = asyncio.Queue()
 
 
 def _get_chroma_client():
@@ -132,7 +136,7 @@ def load_document_embeddings(limit: int = None) -> List[Tuple[str, str, List[flo
                 batch_embeddings = embeddings_list[i:i + batch_size]
                 batch_metadatas = metadatas[i:i + batch_size]
                 batch_ids = ids[i:i + batch_size]
-                
+
                 collection.add(
                     embeddings=batch_embeddings,
                     metadatas=batch_metadatas,
@@ -308,36 +312,120 @@ def find_document_tool(query: str) -> str:
         return f"Error searching documents: {exc}"
 
 
+def show_document_tool(pdf_files: List[str]) -> dict:
+    """Display PDF documents to the user.
+
+    Use this tool to show specific apartment manual PDF documents to the user.
+    This will open the documents in the user's interface for viewing.
+
+    Args:
+        pdf_files: List of PDF filenames with optional page numbers using format
+                  "filename:page_number" (e.g., ["001.pdf:5", "023.pdf:12", "007.pdf"])
+                  If no page number is specified, the document opens at the first page.
+
+    Returns:
+        Dictionary with the result of the document display action
+    """
+    try:
+        if not pdf_files:
+            return {
+                "status": "error",
+                "message": "No PDF files specified to show."
+            }
+
+        # Build the document list from filename:page_number format
+        documents = []
+        processed_files = []
+
+        for pdf_file in pdf_files:
+            # Parse filename:page_number format
+            if ':' in pdf_file:
+                filename, page_str = pdf_file.split(':', 1)
+                try:
+                    page_number = int(page_str)
+                    documents.append({"filename": filename, "page_number": page_number})
+                    processed_files.append(f"{filename} (page {page_number})")
+                except ValueError:
+                    # Invalid page number, treat as filename only
+                    documents.append({"filename": pdf_file})
+                    processed_files.append(pdf_file)
+            else:
+                # No page number specified
+                documents.append({"filename": pdf_file})
+                processed_files.append(pdf_file)
+
+        if not documents:
+            return {
+                "status": "error",
+                "message": "No valid PDF files found in the input."
+            }
+
+        # Create the JSON command for the client
+        command_data = {
+            "command": "show_document",
+            "params": documents
+        }
+
+        # Format as the required message structure
+        client_message = {
+            "mime_type": "application/json",
+            "data": command_data
+        }
+
+        # Put the message in the queue for the main server to send to client
+        try:
+            client_message_queue.put_nowait(client_message)
+        except asyncio.QueueFull:
+            return {
+                "status": "error",
+                "message": "Unable to queue document display command - queue is full."
+            }
+
+        # Return success status with details
+        return {
+            "status": "success",
+            "action": "document_display_queued",
+            "documents": processed_files,
+            "count": len(documents),
+            "message": f"Displaying {len(documents)} documents to the user"
+        }
+
+    except Exception as exc:
+        return {
+            "status": "error",
+            "message": f"Failed to display documents: {exc}"
+        }
+
+
 def initialize_chromadb_on_startup():
     """Initialize ChromaDB with all documents and run a test query on server startup."""
-    import time
-    
+
     print("🚀 Initializing ChromaDB with all 34k+ apartment manual documents...")
     start_time = time.time()
-    
+
     # Reset collection to start fresh
     reset_collection()
-    
+
     # Load all documents (no limit)
     print("📥 Loading all documents from CSV...")
     load_start = time.time()
     documents = load_document_embeddings(limit=None)
     load_time = time.time() - load_start
-    
+
     print(f"✅ Loaded {len(documents)} documents in {load_time:.2f} seconds")
-    
+
     # Run test query to verify everything works
     print("🔍 Running test query to verify ChromaDB search...")
     test_start = time.time()
     test_result = find_document_tool("Wi-Fi setup")
     test_time = time.time() - test_start
-    
+
     total_time = time.time() - start_time
-    
+
     print(f"✅ Test query completed in {test_time:.2f} seconds")
     print(f"🎯 ChromaDB initialization complete in {total_time:.2f} seconds")
     print(f"📊 Ready to search {len(documents)} apartment manual documents")
-    
+
     # Show test result preview
     if "Found relevant apartment manual documents:" in test_result:
         lines = test_result.split('\n')
@@ -348,8 +436,9 @@ def initialize_chromadb_on_startup():
         print(f"⚠️  Test query result: {test_result[:100]}...")
 
 
-# Create the ADK Function Tool
-document_search_tool = FunctionTool(find_document_tool)
+# ADK Function Tools are defined above:
+# - find_document_tool: Search apartment manual documents
+# - show_document_tool: Display PDF documents to the user
 
 
 # Example usage

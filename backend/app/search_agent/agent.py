@@ -18,7 +18,7 @@ This module defines the root agent that uses Google Search tools to answer quest
 """
 
 from google.adk.agents import Agent
-from .chromadb_search import document_search_tool
+from .chromadb_search import find_document_tool, show_document_tool
 
 root_agent = Agent(
    # A unique name for the agent.
@@ -29,9 +29,11 @@ root_agent = Agent(
    # A short description of the agent's purpose.
    description="Agent for answering questions about apartment manuals and building info.",
    # Instructions to set the agent's behavior.
-   instruction="Answer questions about apartment living using the document search tool to find "
+   instruction="Answer questions about apartment living using the find_document_tool to find "
               "relevant information from apartment manuals covering appliances, services, "
-              "building rules, and facilities.",
-   # Add document_search_tool for apartment manual queries.
-   tools=[document_search_tool],
+              "building rules, and facilities. When you receive the filenames from the "
+              "find_document_tool, use the show_document_tool with filenames in "
+              "'filename:page_number' format (e.g., ['001.pdf:5', '023.pdf:12']) to display them.",
+   # Add tools for apartment manual queries and document display.
+   tools=[find_document_tool, show_document_tool],
 )
