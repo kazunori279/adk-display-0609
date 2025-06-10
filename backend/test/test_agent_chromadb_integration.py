@@ -15,6 +15,7 @@ from unittest.mock import patch
 import pytest
 import pytest_asyncio
 from dotenv import load_dotenv
+import certifi
 
 from google.genai.types import Content, Part
 from google.adk.runners import InMemoryRunner
@@ -26,6 +27,9 @@ from app.search_agent.chromadb_search import find_document_tool
 
 # Load environment variables from backend/.env file
 load_dotenv()
+
+# Set SSL certificate file for all tests
+os.environ['SSL_CERT_FILE'] = certifi.where()
 
 
 class MockEvent:

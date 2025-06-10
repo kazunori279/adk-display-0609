@@ -25,6 +25,7 @@ import warnings
 
 from pathlib import Path
 from dotenv import load_dotenv
+import certifi
 
 from google.genai.types import (
     Part,
@@ -51,6 +52,9 @@ warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
 
 # Load Gemini API Key
 load_dotenv()
+
+# Set SSL certificate file for secure API connections
+os.environ['SSL_CERT_FILE'] = certifi.where()
 
 APP_NAME = "ADK Streaming example"
 
