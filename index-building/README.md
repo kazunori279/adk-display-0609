@@ -112,7 +112,7 @@ python create_embeddings_csv.py
 
 **Input:** `data/file_description.csv` (generated from PDF processing)
 
-**Output:** `data/file_desc_emb.csv` (original data + embeddings column)
+**Output:** `data/file_desc_emb.csv` (simplified format with filename and embeddings only)
 
 **Embedding Details:**
 
@@ -142,9 +142,9 @@ python create_embeddings_csv.py
 
 ## Output Format
 
-### CSV Output Structure
+### Input CSV Format (file_description.csv)
 
-The generated CSV contains the following columns:
+The input CSV from PDF processing contains the following columns:
 
 | Column | Description |
 |--------|-------------|
@@ -154,6 +154,14 @@ The generated CSV contains the following columns:
 | `subsection_name` | Specific subsection within the section |
 | `subsection_pdf_page_number` | Page number where subsection starts |
 | `query` | Generated search query in Japanese |
+
+### Output CSV Format (file_desc_emb.csv)
+
+The output CSV with embeddings contains only:
+
+| Column | Description |
+|--------|-------------|
+| `pdf_filename` | Source PDF file (e.g., "001.pdf") |
 | `embeddings` | Vector embeddings (128 dimensions, JSON format) |
 
 ### PDF File Management

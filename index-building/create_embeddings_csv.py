@@ -206,26 +206,26 @@ def generate_embeddings_multithreaded(texts: List[str],
 
 def write_embeddings_csv(rows: List[Dict[str, str]],
                         embeddings: List[List[float]], output_path: Path):
-    """Write the new CSV file with embeddings column."""
+    """Write the new CSV file with filename and embeddings columns only."""
     if len(rows) != len(embeddings):
         raise ValueError(f"Mismatch: {len(rows)} rows but {len(embeddings)} embeddings")
 
-    # Get original fieldnames and add embeddings
-    original_fieldnames = list(rows[0].keys()) if rows else []
-    fieldnames = original_fieldnames + ['embeddings']
+    # Only include filename and embeddings columns
+    fieldnames = ['pdf_filename', 'embeddings']
 
     with open(output_path, 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
 
         for row, embedding in zip(rows, embeddings):
-            # Create new row with all original data plus embeddings
-            new_row = row.copy()
-            # Convert embedding to JSON string for CSV storage
-            new_row['embeddings'] = json.dumps(embedding)
+            # Create new row with only filename and embeddings
+            new_row = {
+                'pdf_filename': row.get('pdf_filename', ''),
+                'embeddings': json.dumps(embedding)
+            }
             writer.writerow(new_row)
 
-    print(f"✓ Wrote {len(rows):,} rows with embeddings to {output_path}")
+    print(f"✓ Wrote {len(rows):,} rows with filename and embeddings to {output_path}")
 
 
 def main():
@@ -278,9 +278,9 @@ def main():
         write_embeddings_csv(rows, embeddings, output_csv)
 
         print(f"\n✅ Successfully created {output_csv}")
-        print(f"   Original columns: {len(rows[0].keys()) if rows else 0}")
-        print(f"   New columns: {len(rows[0].keys()) + 1 if rows else 1}")
+        print(f"   Output columns: pdf_filename, embeddings")
         print(f"   Total rows: {len(rows):,}")
+        print(f"   Embedding dimensions: 128")
 
     except KeyboardInterrupt:
         print("\n⚠️  Process interrupted by user")
