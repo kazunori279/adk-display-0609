@@ -161,7 +161,7 @@ def dot_product_similarity(vec1: List[float], vec2: List[float]) -> float:
     return sum(a * b for a, b in zip(vec1, vec2))
 
 
-def find_document(search_query: str, limit: int = 10000) -> List[Tuple[str, str, float]]:
+def find_document(search_query: str, limit: int = None) -> List[Tuple[str, str, float]]:
     """Find top 3 documents most similar to the query using ChromaDB.
 
     Args:
@@ -306,6 +306,46 @@ def find_document_tool(query: str) -> str:
 
     except Exception as exc:  # pylint: disable=broad-except
         return f"Error searching documents: {exc}"
+
+
+def initialize_chromadb_on_startup():
+    """Initialize ChromaDB with all documents and run a test query on server startup."""
+    import time
+    
+    print("🚀 Initializing ChromaDB with all 34k+ apartment manual documents...")
+    start_time = time.time()
+    
+    # Reset collection to start fresh
+    reset_collection()
+    
+    # Load all documents (no limit)
+    print("📥 Loading all documents from CSV...")
+    load_start = time.time()
+    documents = load_document_embeddings(limit=None)
+    load_time = time.time() - load_start
+    
+    print(f"✅ Loaded {len(documents)} documents in {load_time:.2f} seconds")
+    
+    # Run test query to verify everything works
+    print("🔍 Running test query to verify ChromaDB search...")
+    test_start = time.time()
+    test_result = find_document_tool("Wi-Fi setup")
+    test_time = time.time() - test_start
+    
+    total_time = time.time() - start_time
+    
+    print(f"✅ Test query completed in {test_time:.2f} seconds")
+    print(f"🎯 ChromaDB initialization complete in {total_time:.2f} seconds")
+    print(f"📊 Ready to search {len(documents)} apartment manual documents")
+    
+    # Show test result preview
+    if "Found relevant apartment manual documents:" in test_result:
+        lines = test_result.split('\n')
+        print("🔍 Test query result preview:")
+        for line in lines[:4]:  # Show first 4 lines
+            print(f"   {line}")
+    else:
+        print(f"⚠️  Test query result: {test_result[:100]}...")
 
 
 # Create the ADK Function Tool

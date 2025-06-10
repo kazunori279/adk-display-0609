@@ -43,6 +43,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.search_agent.agent import root_agent
+from app.search_agent.chromadb_search import initialize_chromadb_on_startup
 
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
 
@@ -146,6 +147,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Initialize ChromaDB with all documents on startup
+print("🔧 Starting ChromaDB initialization...")
+initialize_chromadb_on_startup()
+print("🎉 ChromaDB initialization complete - server ready!")
 
 STATIC_DIR = Path(__file__).parent / "static"
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
