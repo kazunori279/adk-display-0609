@@ -18,18 +18,20 @@ This module defines the root agent that uses Google Search tools to answer quest
 """
 
 from google.adk.agents import Agent
-from google.adk.tools import google_search  # Import the tool
+from .chromadb_search import document_search_tool
 
 root_agent = Agent(
    # A unique name for the agent.
-   name="google_search_agent",
+   name="apartment_document_agent",
    # The Large Language Model (LLM) that agent will use.
    model="gemini-2.0-flash-exp", # if this model does not work, try below
    #model="gemini-2.0-flash-live-001",
    # A short description of the agent's purpose.
-   description="Agent to answer questions using Google Search.",
+   description="Agent for answering questions about apartment manuals and building info.",
    # Instructions to set the agent's behavior.
-   instruction="Answer the question using the Google Search tool.",
-   # Add google_search tool to perform grounding with Google search.
-   tools=[google_search],
+   instruction="Answer questions about apartment living using the document search tool to find "
+              "relevant information from apartment manuals covering appliances, services, "
+              "building rules, and facilities.",
+   # Add document_search_tool for apartment manual queries.
+   tools=[document_search_tool],
 )

@@ -14,6 +14,7 @@ import uuid
 
 import chromadb
 from chromadb.config import Settings
+from google.adk.tools import FunctionTool
 
 from .generate_embeddings import generate_text_embeddings
 
@@ -250,6 +251,59 @@ def reset_collection():
         except ValueError:
             pass  # Collection doesn't exist
     _COLLECTION = None
+
+
+def find_document_tool(query: str) -> str:
+    """Search comprehensive apartment manual documents for relevant information.
+
+    This function searches through apartment manual documents using vector similarity
+    to find the most relevant information for the given query.
+
+    DOCUMENT COVERAGE:
+    - HOME APPLIANCES: Air conditioners, humidifiers, dehumidifiers, vacuum cleaners,
+      washing machines, dryers, rice cookers, refrigerators, water heaters, ventilation
+    - KITCHEN EQUIPMENT: Coffee machines, espresso makers, dishwashers, microwave ovens,
+      steam ovens, induction cooktops, range hoods, garbage disposals
+    - AUDIO/VIDEO EQUIPMENT: Bluetooth transmitters, audio amplifiers, Blu-ray recorders,
+      DVD players, TV systems, sound systems, speakers
+    - COMPUTER/NETWORK: NAS systems, wireless keyboards, mini PCs, tablets, routers,
+      network equipment, Wi-Fi setup, internet connectivity
+    - SAFETY/SECURITY: Fire evacuation devices, escape ladders, emergency equipment,
+      rescue tools, smoke detectors, security systems
+    - BUILDING INFRASTRUCTURE: Gas equipment (stoves, heaters), electrical systems,
+      plumbing, HVAC controls, elevator systems, intercom systems
+    - BUILDING SERVICES & RULES: Move-in procedures, parking regulations, waste
+      separation guidelines, noise policies, pet policies, common area usage
+    - TRANSPORTATION & AMENITIES: Shuttle bus schedules and routes, rental bicycle
+      systems, unmanned convenience store operations, package delivery systems
+
+    Args:
+        query: Search query text to find relevant documents
+
+    Returns:
+        Formatted string containing the top 3 most relevant documents with
+        their filenames, descriptions, and relevance scores
+    """
+    try:
+        search_results = find_document(query)
+
+        if not search_results:
+            return "No relevant apartment manual documents found for your query."
+
+        formatted_results = ["Found relevant apartment manual documents:"]
+        for i, (filename, description, score) in enumerate(search_results, 1):
+            formatted_results.append(
+                f"{i}. {filename}: {description} (relevance: {score:.3f})"
+            )
+
+        return "\n".join(formatted_results)
+
+    except Exception as exc:  # pylint: disable=broad-except
+        return f"Error searching documents: {exc}"
+
+
+# Create the ADK Function Tool
+document_search_tool = FunctionTool(find_document_tool)
 
 
 # Example usage
