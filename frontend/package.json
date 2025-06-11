@@ -9,7 +9,7 @@
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore"
   },
   "dependencies": {
-    "pdfjs-dist": "^5.3.31",
+    "pdfjs-dist": "^3.11.174",
     "vue": "^3.4.0"
   },
   "devDependencies": {

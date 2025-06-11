@@ -16,38 +16,17 @@
           <h3 class="text-lg font-semibold text-gray-800">{{ currentDocument.filename }}</h3>
         </div>
         <div class="flex items-center gap-2">
-          <span class="text-sm text-gray-600">Page {{ currentPage }} of {{ totalPages }}</span>
-          <div class="flex gap-1">
-            <button 
-              @click="previousPage" 
-              :disabled="currentPage <= 1"
-              class="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-              </svg>
-            </button>
-            <button 
-              @click="nextPage" 
-              :disabled="currentPage >= totalPages"
-              class="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-              </svg>
-            </button>
-          </div>
+          <span class="text-sm text-gray-600">{{ currentDocument.pageNumber ? `Page ${currentDocument.pageNumber}` : 'Document' }}</span>
         </div>
       </div>
       
-      <!-- PDF Canvas Container -->
-      <div class="flex-1 overflow-auto p-4">
-        <div class="flex justify-center">
-          <canvas 
-            ref="pdfCanvas" 
-            class="border border-gray-300 shadow-lg bg-white"
-          ></canvas>
-        </div>
+      <!-- PDF iframe Container -->
+      <div class="flex-1 overflow-hidden p-4">
+        <iframe 
+          :src="pdfUrl"
+          class="w-full h-full border border-gray-300 shadow-lg bg-white rounded"
+          title="PDF Viewer"
+        ></iframe>
       </div>
     </div>
 
@@ -75,11 +54,7 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick } from 'vue'
-import * as pdfjsLib from 'pdfjs-dist'
-
-// Set up PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`
+import { ref, computed } from 'vue'
 
 // Props
 const props = defineProps({
@@ -91,11 +66,6 @@ const props = defineProps({
 
 // State
 const contentItems = ref([])
-const pdfCanvas = ref(null)
-const currentPage = ref(1)
-const totalPages = ref(0)
-const pdfDocument = ref(null)
-const renderTask = ref(null)
 
 const emit = defineEmits(['select-item'])
 
@@ -103,116 +73,21 @@ const selectItem = (item) => {
   emit('select-item', item)
 }
 
-// PDF Loading and Rendering
-async function loadPDF(documentInfo) {
-  try {
-    console.log('Loading PDF:', documentInfo)
-    
-    // Construct the PDF URL
-    const pdfUrl = `${documentInfo.basePath}${documentInfo.filename}`
-    console.log('PDF URL:', pdfUrl)
-    
-    // Load the PDF document
-    const loadingTask = pdfjsLib.getDocument(pdfUrl)
-    pdfDocument.value = await loadingTask.promise
-    totalPages.value = pdfDocument.value.numPages
-    
-    // Set the initial page
-    currentPage.value = documentInfo.pageNumber || 1
-    
-    // Render the page
-    await renderPage(currentPage.value)
-    
-  } catch (error) {
-    console.error('Error loading PDF:', error)
-    // You might want to show an error message to the user
-  }
-}
-
-async function renderPage(pageNum) {
-  if (!pdfDocument.value || !pdfCanvas.value) return
+// Computed property for PDF URL
+const pdfUrl = computed(() => {
+  if (!props.currentDocument) return ''
   
-  try {
-    // Cancel any previous render task
-    if (renderTask.value) {
-      renderTask.value.cancel()
-    }
-    
-    // Get the page
-    const page = await pdfDocument.value.getPage(pageNum)
-    
-    // Set up the canvas
-    const canvas = pdfCanvas.value
-    const context = canvas.getContext('2d')
-    
-    // Calculate scale to fit the container nicely
-    const containerWidth = canvas.parentElement.clientWidth - 40 // Account for padding
-    const viewport = page.getViewport({ scale: 1.0 })
-    const scale = Math.min(containerWidth / viewport.width, 1.5) // Max scale of 1.5
-    const scaledViewport = page.getViewport({ scale })
-    
-    // Set canvas dimensions
-    canvas.height = scaledViewport.height
-    canvas.width = scaledViewport.width
-    
-    // Render the page
-    const renderContext = {
-      canvasContext: context,
-      viewport: scaledViewport
-    }
-    
-    renderTask.value = page.render(renderContext)
-    await renderTask.value.promise
-    renderTask.value = null
-    
-    console.log(`Rendered page ${pageNum} of ${totalPages.value}`)
-    
-  } catch (error) {
-    if (error.name !== 'RenderingCancelledException') {
-      console.error('Error rendering page:', error)
-    }
+  let url = `${props.currentDocument.basePath}${props.currentDocument.filename}`
+  
+  // Add page fragment if specified
+  if (props.currentDocument.pageNumber) {
+    url += `#page=${props.currentDocument.pageNumber}`
   }
-}
-
-// Navigation functions
-function nextPage() {
-  if (currentPage.value < totalPages.value) {
-    currentPage.value++
-    renderPage(currentPage.value)
-  }
-}
-
-function previousPage() {
-  if (currentPage.value > 1) {
-    currentPage.value--
-    renderPage(currentPage.value)
-  }
-}
+  
+  return url
+})
 
 function closePDF() {
-  if (renderTask.value) {
-    renderTask.value.cancel()
-  }
-  pdfDocument.value = null
-  currentPage.value = 1
-  totalPages.value = 0
-  // You might want to emit an event to clear the currentDocument in the parent
   emit('select-item', null)
 }
-
-// Watch for document changes
-watch(() => props.currentDocument, async (newDoc) => {
-  if (newDoc) {
-    await nextTick() // Wait for DOM to update
-    await loadPDF(newDoc)
-  }
-}, { immediate: true })
-
-// Watch for page changes to handle external page requests
-watch(() => props.currentDocument?.pageNumber, (newPageNumber) => {
-  if (newPageNumber && newPageNumber !== currentPage.value && pdfDocument.value) {
-    currentPage.value = newPageNumber
-    renderPage(currentPage.value)
-  }
-})
 </script>
