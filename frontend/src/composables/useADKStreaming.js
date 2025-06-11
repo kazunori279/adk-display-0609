@@ -41,7 +41,6 @@ export function useADKStreaming() {
     eventSource.onopen = function () {
       console.log("SSE connection opened.")
       isConnected.value = true
-      addSystemMessage("Connection opened")
     }
 
     eventSource.onmessage = function (event) {
@@ -87,10 +86,9 @@ export function useADKStreaming() {
       }
     }
 
-    eventSource.onerror = function (event) {
+    eventSource.onerror = function () {
       console.log("SSE connection error or closed.")
       isConnected.value = false
-      addSystemMessage("Connection closed")
       eventSource.close()
       
       // Auto-reconnect after 5 seconds
@@ -180,8 +178,6 @@ export function useADKStreaming() {
         eventSource.close()
         connectSSE()
       }
-      
-      addSystemMessage("Audio enabled")
     } catch (error) {
       console.error('Error starting audio:', error)
       addSystemMessage("Failed to start audio: " + error.message)
@@ -215,7 +211,6 @@ export function useADKStreaming() {
     })
 
     isAudioEnabled.value = false
-    addSystemMessage("Audio disabled")
   }
 
   // Audio recorder handler
