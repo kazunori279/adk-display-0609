@@ -8,6 +8,7 @@ This module provides the same functionality as vector_search.py but uses ChromaD
 
 import ast
 import csv
+import re
 import time
 from pathlib import Path
 from typing import List, Tuple
@@ -166,7 +167,7 @@ def dot_product_similarity(vec1: List[float], vec2: List[float]) -> float:
 
 
 def find_document(search_query: str, limit: int = None) -> List[Tuple[str, str, float]]:
-    """Find top 3 documents most similar to the query using ChromaDB.
+    """Find top 5 unique documents most similar to the query using ChromaDB.
 
     Args:
         search_query: Search query text
@@ -174,7 +175,8 @@ def find_document(search_query: str, limit: int = None) -> List[Tuple[str, str, 
 
     Returns:
         List of tuples containing (filename, description, similarity_score)
-        sorted by similarity score in descending order (top 3)
+        sorted by similarity score in descending order (top 5 unique results)
+        Results are filtered by relevancy threshold of 0.920 to remove low-quality matches.
     """
     # Generate embedding for the query
     query_embedding = generate_text_embedding(search_query)
@@ -193,17 +195,21 @@ def find_document(search_query: str, limit: int = None) -> List[Tuple[str, str, 
         return []
 
     try:
-        # Query ChromaDB for similar documents
+        # Query ChromaDB for more results to account for duplicates
+        # Request 20 results to filter down to 5 unique ones
         query_results = collection.query(
             query_embeddings=[query_embedding],
-            n_results=3,
+            n_results=20,
             include=['metadatas', 'distances']
         )
 
         similarities = []
+        seen_documents = set()  # Track (filename, page_number) combinations
+
         if query_results['metadatas'] and query_results['distances']:
             metadatas = query_results['metadatas'][0]
             distances = query_results['distances'][0]
+
             for metadata, distance in zip(metadatas, distances):
                 # ChromaDB returns distance, convert to similarity
                 # For cosine distance: similarity = 1 - distance
@@ -213,8 +219,23 @@ def find_document(search_query: str, limit: int = None) -> List[Tuple[str, str, 
                 )
 
                 filename = metadata['filename']
+                page_number = metadata.get('page_number', '')
                 page_info = metadata['page_info']
-                similarities.append((filename, page_info, similarity))
+
+                # Create unique key for deduplication
+                doc_key = (filename, page_number)
+
+                # Apply relevancy threshold (0.920) to filter out low-quality matches
+                relevancy_threshold = 0.920
+
+                # Only add if we haven't seen this filename+page combination and meets threshold
+                if doc_key not in seen_documents and similarity >= relevancy_threshold:
+                    seen_documents.add(doc_key)
+                    similarities.append((filename, page_info, similarity))
+
+                    # Stop when we have 5 unique results
+                    if len(similarities) >= 5:
+                        break
 
         return similarities
 
@@ -245,10 +266,34 @@ def _fallback_find_document(search_query: str, limit: int = None) -> List[Tuple[
         similarity = dot_product_similarity(query_embedding, doc_embedding)
         similarities.append((doc_filename, doc_description, similarity))
 
-    # Sort by similarity score (descending) and return top 3
+    # Sort by similarity score (descending)
     similarities.sort(key=lambda x: x[2], reverse=True)
 
-    return similarities[:3]
+    # Remove duplicates based on filename and page number
+    seen_documents = set()
+    unique_similarities = []
+
+    for filename, description, similarity in similarities:
+        # Extract page number from description (format: "filename (page number)")
+        page_match = re.search(r'\(page (\d+)\)', description)
+        page_number = page_match.group(1) if page_match else ''
+
+        # Create unique key for deduplication
+        doc_key = (filename, page_number)
+
+        # Apply relevancy threshold (0.920) to filter out low-quality matches
+        relevancy_threshold = 0.920
+
+        # Only add if we haven't seen this filename+page combination and meets threshold
+        if doc_key not in seen_documents and similarity >= relevancy_threshold:
+            seen_documents.add(doc_key)
+            unique_similarities.append((filename, description, similarity))
+
+            # Stop when we have 5 unique results
+            if len(unique_similarities) >= 5:
+                break
+
+    return unique_similarities
 
 
 def reset_collection():
@@ -291,7 +336,7 @@ def find_document_tool(query: str) -> str:
         query: Search query text to find relevant documents
 
     Returns:
-        Formatted string containing the top 3 most relevant documents with
+        Formatted string containing the top 5 most relevant unique documents with
         their filenames, descriptions, and relevance scores
     """
     try:
