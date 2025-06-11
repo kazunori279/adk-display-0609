@@ -12,6 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""FastAPI backend server for ADK streaming application.
+
+This module provides a FastAPI web server that handles real-time communication
+between clients and Google ADK agents using Server-Sent Events (SSE) and HTTP endpoints.
+"""
+
 import os
 import json
 import base64
@@ -19,6 +25,7 @@ import warnings
 
 from pathlib import Path
 from dotenv import load_dotenv
+import certifi
 
 from google.genai.types import (
     Part,
@@ -35,7 +42,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from google_search_agent.agent import root_agent
+from app.search_agent.agent import root_agent
+from app.search_agent.chromadb_search import initialize_chromadb_on_startup
 
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
 
@@ -45,6 +53,9 @@ warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
 
 # Load Gemini API Key
 load_dotenv()
+
+# Set SSL certificate file for secure API connections
+os.environ['SSL_CERT_FILE'] = certifi.where()
 
 APP_NAME = "ADK Streaming example"
 
@@ -137,7 +148,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-STATIC_DIR = Path("static")
+# Initialize ChromaDB with all documents on startup
+print("🔧 Starting ChromaDB initialization...")
+initialize_chromadb_on_startup()
+print("🎉 ChromaDB initialization complete - server ready!")
+
+STATIC_DIR = Path(__file__).parent / "static"
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # Store active sessions
@@ -173,7 +189,7 @@ async def sse_endpoint(user_id: int, is_audio: str = "false"):
         try:
             async for data in agent_to_client_sse(live_events):
                 yield data
-        except Exception as e:
+        except (ConnectionError, RuntimeError) as e:
             print(f"Error in SSE stream: {e}")
         finally:
             cleanup()

@@ -14,9 +14,14 @@ from pathlib import Path
 import pytest
 from dotenv import load_dotenv
 
-from generate_chunks import main
+# from generate_chunks import main  # Unused import
 from models import DocumentQueries, QuerySection, GeneratedQuery
-from gemini_utils import create_gemini_client, upload_pdf, get_test_rag_prompt, generate_with_fallback
+from gemini_utils import (
+    create_gemini_client,
+    upload_pdf,
+    get_rag_prompt,
+    generate_with_fallback,
+)
 
 
 class TestGenerateChunksIntegration:
@@ -43,9 +48,9 @@ class TestGenerateChunksIntegration:
         try:
             client = create_gemini_client()
             uploaded_file = upload_pdf(client, test_pdf)
-            prompt = get_test_rag_prompt()  # Use test prompt with 10 queries per section
+            prompt = get_rag_prompt(10)  # Use 10 queries per section for tests
             response = generate_with_fallback(client, uploaded_file, prompt, DocumentQueries)
-            
+
             document_queries = response.parsed
             print(f"\nTest completed with PDF: {test_pdf}")
             print(f"Document description: {document_queries.description}")
@@ -68,7 +73,7 @@ class TestGenerateChunksIntegration:
         assert "Document description:" in output
         assert "Number of sections:" in output
         assert "Total queries generated:" in output
-        
+
         # Verify the actual response data
         assert isinstance(document_queries, DocumentQueries)
         assert document_queries.description
@@ -98,7 +103,6 @@ class TestGenerateChunksIntegration:
         captured_response = None
 
         # Import necessary modules
-        from google import genai  # pylint: disable=import-outside-toplevel
         from google.genai.models import Models  # pylint: disable=import-outside-toplevel
 
         # Store the original generate_content method
@@ -109,7 +113,7 @@ class TestGenerateChunksIntegration:
             response = original_generate_content(self, **kwargs)
             # Capture the response
             nonlocal captured_response
-            if hasattr(response, 'parsed'):
+            if hasattr(response, "parsed"):
                 captured_response = response.parsed
             return response
 
@@ -120,7 +124,7 @@ class TestGenerateChunksIntegration:
             # Run custom test with smaller PDF and test prompt
             client = create_gemini_client()
             uploaded_file = upload_pdf(client, test_pdf)
-            prompt = get_test_rag_prompt()  # Use test prompt with 10 queries per section
+            prompt = get_rag_prompt(10)  # Use 10 queries per section for tests
             response = generate_with_fallback(client, uploaded_file, prompt, DocumentQueries)
             captured_response = response.parsed
         except RuntimeError as e:
@@ -133,41 +137,42 @@ class TestGenerateChunksIntegration:
         assert isinstance(captured_response, DocumentQueries)
 
         # Check description
-        assert hasattr(captured_response, 'description')
+        assert hasattr(captured_response, "description")
         assert isinstance(captured_response.description, str)
         word_count = len(captured_response.description.split())
-        assert word_count < 10, \
-            f"Description has {word_count} words, should be under 10"
+        assert word_count < 10, f"Description has {word_count} words, should be under 10"
 
         # Check sections
-        assert hasattr(captured_response, 'sections')
+        assert hasattr(captured_response, "sections")
         assert isinstance(captured_response.sections, list)
         assert len(captured_response.sections) > 0, "No sections found"
 
         # Check each section
         for i, section in enumerate(captured_response.sections):
             assert isinstance(section, QuerySection), f"Section {i} is not a QuerySection"
-            assert hasattr(section, 'section_name')
+            assert hasattr(section, "section_name")
             assert isinstance(section.section_name, str)
             assert section.section_name, f"Section {i} has empty name"
 
-            assert hasattr(section, 'queries')
+            assert hasattr(section, "queries")
             assert isinstance(section.queries, list)
             assert len(section.queries) > 0, f"Section '{section.section_name}' has no queries"
 
             # Check each query
             for j, query in enumerate(section.queries):
-                assert isinstance(query, GeneratedQuery), \
-                    f"Query {j} in section '{section.section_name}' is not a GeneratedQuery"
-                assert hasattr(query, 'query')
+                assert isinstance(
+                    query, GeneratedQuery
+                ), f"Query {j} in section '{section.section_name}' is not a GeneratedQuery"
+                assert hasattr(query, "query")
                 assert isinstance(query.query, str)
                 assert query.query, f"Query {j} in section '{section.section_name}' is empty"
                 # Check if query is in Japanese (contains Japanese characters)
-                assert any('\u3040' <= char <= '\u309f' or  # Hiragana
-                          '\u30a0' <= char <= '\u30ff' or  # Katakana
-                          '\u4e00' <= char <= '\u9fff'     # Kanji
-                          for char in query.query), \
-                    f"Query '{query.query}' doesn't contain Japanese characters"
+                assert any(
+                    "\u3040" <= char <= "\u309f"  # Hiragana
+                    or "\u30a0" <= char <= "\u30ff"  # Katakana
+                    or "\u4e00" <= char <= "\u9fff"  # Kanji
+                    for char in query.query
+                ), f"Query '{query.query}' doesn't contain Japanese characters"
 
         # Print summary
         total_queries = sum(len(section.queries) for section in captured_response.sections)

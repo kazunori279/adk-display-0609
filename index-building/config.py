@@ -1,4 +1,5 @@
 """Configuration constants for the project."""
+
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent
@@ -11,5 +12,5 @@ DEFAULT_PDF_FILENAME = "waste_separation_guide.pdf"
 GEMINI_MODELS = [
     "gemini-2.5-pro-preview-06-05",
     "gemini-2.0-flash-preview-0514",
-    "gemini-1.5-flash"
+    "gemini-1.5-flash",
 ]
