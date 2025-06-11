@@ -184,11 +184,41 @@ class ServerTester:
         """Step 3: Send test query and verify response."""
         print("🔍 Step 3: Sending test query and verifying response...")
 
-        # Test queries to try
+        # Test queries covering wide range of topics in Japanese (20 total) - based on actual CSV content
         test_queries = [
-            "How do I set up Wi-Fi in my apartment?",
-            "エアコンの使い方は？",  # How to use air conditioner in Japanese
-            "parking regulations"
+            # Wi-Fi and Internet (using actual CSV queries)
+            "Wi-Fiはどこで使えますか？",  # Where can I use Wi-Fi?
+            "オーナーズリビングでインターネットに接続できますか？",  # Can I connect to internet at Owner's Living?
+            
+            # Air conditioning and heating
+            "エアコンの使い方は？",  # How to use air conditioner
+            "暖房の設定方法",  # Heating setup method
+            "ミストサウナ機能付き浴室暖房乾燥機の衣類乾燥機能はありますか？",  # Does mist sauna bathroom heater dryer have clothes drying function?
+            
+            # Kitchen appliances
+            "電子レンジの使い方",  # How to use microwave
+            "食器洗い機の操作方法",  # How to operate dishwasher
+            "コーヒーメーカーの使用方法",  # How to use coffee maker
+            "炊飯の始め方を教えてください",  # How to start rice cooking (actual CSV query)
+            
+            # Laundry and cleaning (using actual CSV queries)
+            "洗濯機の使い方",  # How to use washing machine
+            "掃除機の組み立て方を教えてください",  # How to assemble vacuum cleaner (actual CSV query)
+            "衣類乾燥機能はありますか？",  # Is there a clothes drying function? (actual CSV query)
+            
+            # Building services and facilities (using actual CSV queries)
+            "駐車場の規則",  # Parking lot rules
+            "ゴミの分別方法",  # Garbage separation method
+            "シャトルバスの時刻表",  # Shuttle bus schedule
+            "BBQグッズの予約はコンシェルジュカウンターですか？",  # Is BBQ goods reservation at concierge counter? (actual CSV query)
+            
+            # Safety and security
+            "火災警報器の使い方",  # How to use fire alarm
+            "避難器具の操作方法",  # How to operate evacuation equipment
+            "インターホンの使い方",  # How to use intercom (more specific)
+            
+            # Troubleshooting (using actual CSV queries)
+            "エアコンが効かない時の対処法"  # Air conditioner not working troubleshooting
         ]
 
         for i, query in enumerate(test_queries, 1):
@@ -217,8 +247,8 @@ class ServerTester:
                         if result.get("status") == "sent":
                             print(f"   ✅ Query {i} sent successfully")
 
-                            # Wait for response
-                            await asyncio.sleep(10)  # Give time for agent to respond
+                            # Wait for response (shorter time for efficiency with 20 queries)
+                            await asyncio.sleep(8)  # Give time for agent to respond
 
                             # Cancel SSE listening
                             sse_task.cancel()
@@ -236,11 +266,14 @@ class ServerTester:
             except Exception as e:
                 print(f"   ❌ Query {i} exception: {e}")
 
-            # Brief pause between queries
-            await asyncio.sleep(2)
+            # Brief pause between queries (shorter for efficiency)
+            await asyncio.sleep(1)
 
     async def _listen_for_responses(self, user_id: int):
-        """Listen for SSE responses."""
+        """Listen for SSE responses and check for show_document messages."""
+        show_document_received = False
+        messages_received = []
+        
         try:
             async with httpx.AsyncClient(timeout=60) as client:
                 async with client.stream(
@@ -252,12 +285,38 @@ class ServerTester:
                             if line.startswith("data: "):
                                 try:
                                     data = json.loads(line[6:])
+                                    messages_received.append(data)
+                                    
+                                    # Check for show_document command
+                                    if (data.get("mime_type") == "application/json" and 
+                                        isinstance(data.get("data"), dict) and
+                                        data["data"].get("command") == "show_document"):
+                                        show_document_received = True
+                                        print(f"   ✅ show_document message received: {data}")
+                                    
+                                    # Check for text responses
+                                    elif data.get("mime_type") == "text/plain":
+                                        print(f"   📝 Text response: {data.get('data', '')[:100]}...")
+                                    
                                     if data.get("turn_complete"):
                                         break
                                 except json.JSONDecodeError:
                                     continue
-        except Exception:
-            pass  # Expected when cancelled
+        except Exception as e:
+            print(f"   ⚠️  SSE connection error: {e}")
+        
+        # Store results for this user_id
+        if not hasattr(self, 'test_results'):
+            self.test_results = {}
+        self.test_results[user_id] = {
+            'show_document_received': show_document_received,
+            'messages_count': len(messages_received)
+        }
+        
+        if show_document_received:
+            print(f"   ✅ User {user_id}: show_document message successfully received!")
+        else:
+            print(f"   ⚠️  User {user_id}: No show_document message received")
 
     def step_4_check_server_logs(self):
         """Step 4: Check server logs for errors."""
@@ -317,9 +376,45 @@ class ServerTester:
         except Exception as e:
             print(f"   ❌ Error reading log file: {e}")
 
-    def step_5_keep_server_running(self):
-        """Step 5: Keep server running and provide status."""
-        print("🏃 Step 5: Keeping server running...")
+    def step_5_verify_show_document_functionality(self):
+        """Step 5: Verify show_document functionality based on test results."""
+        print("📋 Step 5: Verifying show_document functionality...")
+        
+        if not hasattr(self, 'test_results') or not self.test_results:
+            print("   ⚠️  No test results available to verify")
+            return
+        
+        show_document_tests = []
+        total_tests = len(self.test_results)
+        total_messages = sum(results['messages_count'] for results in self.test_results.values())
+        
+        for user_id, results in self.test_results.items():
+            if results['show_document_received']:
+                show_document_tests.append(user_id)
+        
+        print(f"   📊 Test Summary:")
+        print(f"      Total queries tested: {total_tests}")
+        print(f"      Total messages received: {total_messages}")
+        print(f"      show_document messages: {len(show_document_tests)}")
+        print(f"      Success rate: {len(show_document_tests)/total_tests*100:.1f}%")
+        
+        if show_document_tests:
+            print(f"   ✅ show_document functionality working! Success rate: {len(show_document_tests)}/{total_tests}")
+            if len(show_document_tests) <= 5:  # Show details for small numbers
+                for user_id in show_document_tests:
+                    print(f"      - User {user_id}: show_document message received")
+            else:
+                print(f"      - {len(show_document_tests)} queries successfully triggered document display")
+        else:
+            print("   ⚠️  show_document functionality may not be working - no messages received")
+            print("   💡 This could mean:")
+            print("      - The agent didn't use the show_document_tool")
+            print("      - The queue integration has issues")
+            print("      - The queries didn't trigger document display")
+
+    def step_6_keep_server_running(self):
+        """Step 6: Keep server running and provide status."""
+        print("🏃 Step 6: Keeping server running...")
 
         if self.server_process and self.server_process.poll() is None:
             print(f"   ✅ Server is running with PID: {self.server_process.pid}")
@@ -357,7 +452,10 @@ class ServerTester:
             self.step_4_check_server_logs()
             print()
 
-            self.step_5_keep_server_running()
+            self.step_5_verify_show_document_functionality()
+            print()
+
+            self.step_6_keep_server_running()
 
         except Exception as e:
             print(f"❌ Test failed with error: {e}")

@@ -31,9 +31,11 @@ root_agent = Agent(
    # Instructions to set the agent's behavior.
    instruction="Answer questions about apartment living using the find_document_tool to find "
               "relevant information from apartment manuals covering appliances, services, "
-              "building rules, and facilities. When you receive the filenames from the "
-              "find_document_tool, use the show_document_tool with filenames in "
-              "'filename:page_number' format (e.g., ['001.pdf:5', '023.pdf:12']) to display them.",
+              "building rules, and facilities. ALWAYS respond in the same language as the user's question. "
+              "When you receive results from find_document_tool, ALWAYS immediately use the show_document_tool "
+              "to display the documents to the user. Extract the filename and page number from each result "
+              "(format: 'filename (page X)') and use the show_document_tool with 'filename:page_number' format "
+              "(e.g., ['001.pdf:5', '023.pdf:12']). Do not ask for clarification when documents are found.",
    # Add tools for apartment manual queries and document display.
    tools=[find_document_tool, show_document_tool],
 )

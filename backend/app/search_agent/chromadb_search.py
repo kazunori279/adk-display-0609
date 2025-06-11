@@ -308,7 +308,7 @@ def reset_collection():
     _COLLECTION = None
 
 
-def find_document_tool(query: str) -> str:
+def find_document_tool(query: str) -> dict:
     """Search comprehensive apartment manual documents for relevant information.
 
     This function searches through apartment manual documents using vector similarity
@@ -336,25 +336,39 @@ def find_document_tool(query: str) -> str:
         query: Search query text to find relevant documents
 
     Returns:
-        Formatted string containing the top 5 most relevant unique documents with
-        their filenames, descriptions, and relevance scores
+        Dictionary with result status and message containing search results in filename:page_number format
     """
     try:
         search_results = find_document(query)
 
         if not search_results:
-            return "No relevant apartment manual documents found for your query."
+            return {
+                "result": "success",
+                "message": "No documents found for your query."
+            }
 
+        # Format results in filename:page_number format for the agent
         formatted_results = ["Found relevant apartment manual documents:"]
         for i, (filename, description, score) in enumerate(search_results, 1):
-            formatted_results.append(
-                f"{i}. {filename}: {description} (relevance: {score:.3f})"
-            )
+            # Extract page number from description (format: "filename (page X)")
+            import re
+            page_match = re.search(r'\(page (\d+)\)', description)
+            if page_match:
+                page_number = page_match.group(1)
+                formatted_results.append(f"{i}. {filename}:{page_number} (relevance: {score:.3f})")
+            else:
+                formatted_results.append(f"{i}. {filename} (relevance: {score:.3f})")
 
-        return "\n".join(formatted_results)
+        return {
+            "result": "success",
+            "message": "\n".join(formatted_results)
+        }
 
     except Exception as exc:  # pylint: disable=broad-except
-        return f"Error searching documents: {exc}"
+        return {
+            "result": "error",
+            "message": f"Error searching documents: {exc}"
+        }
 
 
 def show_document_tool(pdf_files: List[str]) -> dict:
@@ -472,13 +486,17 @@ def initialize_chromadb_on_startup():
     print(f"📊 Ready to search {len(documents)} apartment manual documents")
 
     # Show test result preview
-    if "Found relevant apartment manual documents:" in test_result:
-        lines = test_result.split('\n')
-        print("🔍 Test query result preview:")
-        for line in lines[:4]:  # Show first 4 lines
-            print(f"   {line}")
+    if isinstance(test_result, dict) and test_result.get("result") == "success":
+        message = test_result.get("message", "")
+        if "Found relevant apartment manual documents:" in message:
+            lines = message.split('\n')
+            print("🔍 Test query result preview:")
+            for line in lines[:4]:  # Show first 4 lines
+                print(f"   {line}")
+        else:
+            print(f"⚠️  Test query message: {message[:100]}...")
     else:
-        print(f"⚠️  Test query result: {test_result[:100]}...")
+        print(f"⚠️  Test query result: {str(test_result)[:100]}...")
 
 
 # ADK Function Tools are defined above:
