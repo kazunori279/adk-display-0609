@@ -12,7 +12,10 @@
           :is-connected="isConnected"
           :is-audio-enabled="isAudioEnabled"
         />
-        <MainContent @select-item="handleSelectItem" />
+        <MainContent 
+          @select-item="handleSelectItem" 
+          :current-document="currentDocument"
+        />
       </div>
     </div>
   </div>
@@ -24,7 +27,7 @@ import ChatSidebar from './components/ChatSidebar.vue'
 import MainContent from './components/MainContent.vue'
 import { useADKStreaming } from './composables/useADKStreaming.js'
 
-const { sendTextMessage, startAudio, stopAudio, isAudioEnabled, isConnected, messages } = useADKStreaming()
+const { sendTextMessage, startAudio, stopAudio, isAudioEnabled, isConnected, messages, currentDocument } = useADKStreaming()
 
 const handleSendMessage = (message) => {
   sendTextMessage(message)

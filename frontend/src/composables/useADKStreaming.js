@@ -10,6 +10,9 @@ export function useADKStreaming() {
   const isAudioEnabled = ref(false)
   const messages = ref([])
   
+  // Document display state
+  const currentDocument = ref(null)
+  
   // Audio state
   const audioState = reactive({
     playerNode: null,
@@ -63,6 +66,12 @@ export function useADKStreaming() {
       // If it's audio, play it
       if (messageFromServer.mime_type === "audio/pcm" && audioState.playerNode) {
         audioState.playerNode.port.postMessage(base64ToArray(messageFromServer.data))
+      }
+
+      // If it's a document command, handle it
+      if (messageFromServer.mime_type === "application/json") {
+        handleDocumentCommand(messageFromServer.data)
+        return
       }
 
       // If it's text, display it
@@ -251,6 +260,26 @@ export function useADKStreaming() {
     audioState.audioBuffer = []
   }
 
+  // Handle document display commands
+  function handleDocumentCommand(commandData) {
+    console.log("[DOCUMENT COMMAND]", commandData)
+    
+    if (commandData.command === "show_document" && commandData.params && commandData.params.length > 0) {
+      // Display the first document from the params
+      const firstDoc = commandData.params[0]
+      const documentToShow = {
+        filename: firstDoc.filename,
+        pageNumber: firstDoc.page_number || 1,
+        basePath: `${baseUrl}/static/resources/`
+      }
+      
+      currentDocument.value = documentToShow
+      addSystemMessage(`Displaying ${firstDoc.filename}${firstDoc.page_number ? ` (page ${firstDoc.page_number})` : ''}`)
+      
+      console.log("[DOCUMENT DISPLAY]", documentToShow)
+    }
+  }
+
   // Initialize connection
   connectSSE()
 
@@ -259,6 +288,7 @@ export function useADKStreaming() {
     isConnected,
     isAudioEnabled,
     messages,
+    currentDocument,
     
     // Actions
     sendTextMessage,
