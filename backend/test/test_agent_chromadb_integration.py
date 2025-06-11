@@ -156,6 +156,7 @@ async def mock_chromadb_data():
 class TestAgentChromaDBIntegration:
     """Test agent integration with ChromaDB search tool."""
 
+    @pytest.mark.asyncio
     async def test_agent_uses_search_tool_real_adk(self, agent_helper, mock_chromadb_data):
         """Test that agent uses the search tool with real ADK integration."""
         # Skip if API key not available in .env file
@@ -185,36 +186,42 @@ class TestAgentChromaDBIntegration:
             print(f"Agent test error: {exc}")
             pytest.skip(f"Real ADK agent test failed: {exc}")
 
+    @pytest.mark.asyncio
     async def test_agent_tool_function_directly(self, mock_chromadb_data):
         """Test the search tool function directly without agent."""
         result = find_document_tool("air conditioner setup")
 
-        assert "Found relevant apartment manual documents:" in result
-        assert "001.pdf" in result
-        assert "relevance: 0.950" in result
+        assert result["result"] == "success"
+        assert "Found relevant apartment manual documents:" in result["message"]
+        assert "001.pdf" in result["message"]
+        assert "relevance: 0.950" in result["message"]
 
         # Verify mock was called
         mock_chromadb_data.assert_called_once_with("air conditioner setup")
 
+    @pytest.mark.asyncio
     async def test_agent_search_tool_with_wifi_query(self, mock_chromadb_data):
         """Test search tool with Wi-Fi related query."""
         result = find_document_tool("Wi-Fi connection setup")
 
-        assert "Found relevant apartment manual documents:" in result
-        assert "025.pdf" in result
-        assert "Wi-Fi setup guide" in result
-        assert "relevance: 0.870" in result
+        assert result["result"] == "success"
+        assert "Found relevant apartment manual documents:" in result["message"]
+        assert "025.pdf" in result["message"]
+        assert "relevance: 0.870" in result["message"]
 
+    @pytest.mark.asyncio
     async def test_agent_search_tool_formatting(self, mock_chromadb_data):
         """Test that search tool formats results correctly."""
         result = find_document_tool("network configuration")
 
-        lines = result.split('\n')
+        assert result["result"] == "success"
+        lines = result["message"].split('\n')
         assert lines[0] == "Found relevant apartment manual documents:"
-        assert "1. 001.pdf: 001.pdf (page 1): Air conditioner manual (relevance: 0.950)" in lines
-        assert "2. 025.pdf: 025.pdf (page 3): Wi-Fi setup guide (relevance: 0.870)" in lines
-        assert "3. 050.pdf: 050.pdf (page 2): Network configuration (relevance: 0.780)" in lines
+        assert "1. 001.pdf:1 (relevance: 0.950)" in lines
+        assert "2. 025.pdf:3 (relevance: 0.870)" in lines
+        assert "3. 050.pdf:2 (relevance: 0.780)" in lines
 
+    @pytest.mark.asyncio
     async def test_agent_search_tool_no_results(self):
         """Test search tool behavior when no results are found."""
         with patch('app.search_agent.chromadb_search.find_document') as mock_find:
@@ -222,8 +229,10 @@ class TestAgentChromaDBIntegration:
 
             result = find_document_tool("nonexistent topic")
 
-            assert result == "No relevant apartment manual documents found for your query."
+            assert result["result"] == "success"
+            assert result["message"] == "No documents found for your query."
 
+    @pytest.mark.asyncio
     async def test_agent_search_tool_error_handling(self):
         """Test search tool error handling."""
         with patch('app.search_agent.chromadb_search.find_document') as mock_find:
@@ -231,9 +240,11 @@ class TestAgentChromaDBIntegration:
 
             result = find_document_tool("test query")
 
-            assert "Error searching documents:" in result
-            assert "ChromaDB connection error" in result
+            assert result["result"] == "error"
+            assert "Error searching documents:" in result["message"]
+            assert "ChromaDB connection error" in result["message"]
 
+    @pytest.mark.asyncio
     async def test_tool_covers_all_document_categories(self):
         """Test that the tool description covers all document categories."""
         # Check the tool's docstring contains all expected categories
@@ -253,6 +264,7 @@ class TestAgentChromaDBIntegration:
         for category in expected_categories:
             assert category in docstring, f"Category '{category}' missing from tool description"
 
+    @pytest.mark.asyncio
     async def test_tool_specific_equipment_coverage(self):
         """Test that specific equipment types are covered in tool description."""
         docstring = find_document_tool.__doc__
@@ -270,6 +282,7 @@ class TestAgentChromaDBIntegration:
 class TestAgentToolIntegrationMocked:
     """Test agent tool integration with mocked components for faster execution."""
 
+    @pytest.mark.asyncio
     async def test_mock_agent_tool_response_structure(self):
         """Test agent tool response structure with mocked agent."""
         # Mock the agent's tool execution
@@ -281,11 +294,13 @@ class TestAgentToolIntegrationMocked:
             # Test direct tool call
             result = find_document_tool("test query")
 
-            expected_response = """Found relevant apartment manual documents:
-1. test.pdf: test.pdf (page 1): Test document (relevance: 0.950)"""
+            assert result["result"] == "success"
+            expected_message = """Found relevant apartment manual documents:
+1. test.pdf:1 (relevance: 0.950)"""
 
-            assert result == expected_response
+            assert result["message"] == expected_message
 
+    @pytest.mark.asyncio
     async def test_tool_query_parameter_handling(self):
         """Test that the tool properly handles different query parameters."""
         test_queries = [
@@ -304,13 +319,15 @@ class TestAgentToolIntegrationMocked:
             for query in test_queries:
                 result = find_document_tool(query)
 
-                assert "Found relevant apartment manual documents:" in result
-                assert "result.pdf" in result
-                assert "relevance: 0.850" in result
+                assert result["result"] == "success"
+                assert "Found relevant apartment manual documents:" in result["message"]
+                assert "result.pdf" in result["message"]
+                assert "relevance: 0.850" in result["message"]
 
                 # Verify the query was passed correctly
                 mock_find.assert_called_with(query)
 
+    @pytest.mark.asyncio
     async def test_tool_performance_characteristics(self):
         """Test tool performance characteristics."""
         with patch('app.search_agent.chromadb_search.find_document') as mock_find:
@@ -327,12 +344,14 @@ class TestAgentToolIntegrationMocked:
 
             # Tool should complete reasonably quickly even with processing delay
             assert execution_time < 1.0  # Should complete within 1 second
-            assert "Performance test for performance test query" in result
+            assert result["result"] == "success"
+            assert "perf.pdf" in result["message"]
 
 
 class TestAgentRealIntegration:
     """Integration tests with real components (requires actual ChromaDB data)."""
 
+    @pytest.mark.asyncio
     async def test_real_agent_with_chromadb_integration(self, agent_helper):
         """Test real agent integration with ChromaDB search tool."""
         # Skip if API key not available in .env file
@@ -369,6 +388,7 @@ class TestAgentRealIntegration:
             pytest.skip(f"Real agent integration test failed: {exc}")
 
     @pytest.mark.integration
+    @pytest.mark.asyncio
     async def test_real_chromadb_search_integration(self):
         """Test integration with real ChromaDB data if available."""
         try:
@@ -426,6 +446,7 @@ class TestAgentRealIntegration:
 class TestAgentPerformance:
     """Performance tests for agent tool integration."""
 
+    @pytest.mark.asyncio
     async def test_tool_response_time_benchmark(self):
         """Benchmark tool response times."""
         with patch('app.search_agent.chromadb_search.find_document') as mock_find:
