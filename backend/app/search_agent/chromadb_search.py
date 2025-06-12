@@ -317,58 +317,47 @@ filename:page_number format
         }
 
 
-def show_document_tool(pdf_files: List[str]) -> dict:
-    """Display PDF documents to the user.
+def show_document_tool(pdf_file: str) -> dict:
+    """Display PDF document to the user.
 
-    Use this tool to show specific product and service manual PDF documents to the user.
-    This will open the documents in the user's interface for viewing.
+    Use this tool to show a specific product and service manual PDF document to the user.
+    This will open the document in the user's interface for viewing.
 
     Args:
-        pdf_files: List of PDF filenames with optional page numbers using format
-                  "filename:page_number" (e.g., ["001.pdf:5", "023.pdf:12", "007.pdf"])
-                  If no page number is specified, document opens at the first page.
+        pdf_file: PDF filename with optional page number using format
+                 "filename:page_number" (e.g., "001.pdf:5", "023.pdf:12", "007.pdf")
+                 If no page number is specified, document opens at page 1.
 
     Returns:
         Dictionary with the result of the document display action
     """
     try:
-        if not pdf_files:
+        if not pdf_file:
             return {
                 "status": "error",
-                "message": "No PDF files specified to show."
+                "message": "No PDF file specified to show."
             }
 
-        # Build the document list from filename:page_number format
-        documents = []
-        processed_files = []
-
-        for pdf_file in pdf_files:
-            # Parse filename:page_number format
-            if ':' in pdf_file:
-                filename, page_str = pdf_file.split(':', 1)
-                try:
-                    page_number = int(page_str)
-                    documents.append({"filename": filename, "page_number": page_number})
-                    processed_files.append(f"{filename} (page {page_number})")
-                except ValueError:
-                    # Invalid page number, treat as filename only
-                    documents.append({"filename": pdf_file})
-                    processed_files.append(pdf_file)
-            else:
-                # No page number specified
-                documents.append({"filename": pdf_file})
-                processed_files.append(pdf_file)
-
-        if not documents:
-            return {
-                "status": "error",
-                "message": "No valid PDF files found in the input."
-            }
+        # Parse filename:page_number format
+        if ':' in pdf_file:
+            filename, page_str = pdf_file.split(':', 1)
+            try:
+                page_number = int(page_str)
+                document = {"filename": filename, "page_number": page_number}
+                processed_file = f"{filename} (page {page_number})"
+            except ValueError:
+                # Invalid page number, default to page 1
+                document = {"filename": filename, "page_number": 1}
+                processed_file = f"{filename} (page 1)"
+        else:
+            # No page number specified, default to page 1
+            document = {"filename": pdf_file, "page_number": 1}
+            processed_file = f"{pdf_file} (page 1)"
 
         # Create the JSON command for the client
         command_data = {
             "command": "show_document",
-            "params": documents
+            "params": [document]
         }
 
         # Format as the required message structure
@@ -390,9 +379,9 @@ def show_document_tool(pdf_files: List[str]) -> dict:
         return {
             "status": "success",
             "action": "document_display_queued",
-            "documents": processed_files,
-            "count": len(documents),
-            "message": f"Displaying {len(documents)} documents to the user"
+            "documents": [processed_file],
+            "count": 1,
+            "message": f"Displaying {processed_file} to the user"
         }
 
     except Exception as exc:

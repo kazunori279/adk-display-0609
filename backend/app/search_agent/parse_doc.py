@@ -8,13 +8,20 @@ import os
 import time
 import logging
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from pydantic import BaseModel
 
 # Set up logging
 logger = logging.getLogger(__name__)
+
+
+class DocumentAnalysis(BaseModel):
+    """Structured output model for document analysis results."""
+    answer: str
+    page_number: Optional[int] = None
 
 
 def _create_gemini_client() -> genai.Client:
@@ -72,7 +79,7 @@ def parse_doc_tool(query: str, pdf_filename: str) -> Dict[str, str]:
         pdf_filename: PDF filename to analyze (e.g., "001.pdf")
 
     Returns:
-        Dictionary with status and answer/message based on the PDF content
+        Dictionary with status, answer/message, and pdf_file based on the PDF content
     """
     if not pdf_filename:
         return {
@@ -107,19 +114,24 @@ answer user questions.
 
 User Query: {query}
 
-Please analyze the provided PDF document and provide a comprehensive answer to the user's \
-query based on the content you find. If the information is not available in the document, please state that clearly.
+Please analyze the provided PDF document and provide a comprehensive answer to the user's query based on the content you find. If the information is not available in the document, please state that clearly.
 
 Focus on:
 1. Direct answers to the user's question
 2. Relevant details from the document
 3. Step-by-step instructions if applicable
 4. Any important warnings or notes
-5. IMPORTANT: Identify and return the page number where you found the most relevant \
-description for the user's query
+5. IMPORTANT: Identify the page number where you found the most relevant description for the user's query
 
-Please provide your response in a clear, helpful format and include the page number \
-where the most relevant information was found."""
+You must respond in JSON format with these exact fields:
+- "answer": A comprehensive response to the user's question (string)
+- "page_number": The page number where the most relevant information was found (integer, or null if no specific page)
+
+Example response format:
+{{
+  "answer": "Your detailed answer here...",
+  "page_number": 9
+}}"""
 
         # Prepare content list with PDF part and prompt
         content = [pdf_file_part, prompt]
@@ -138,22 +150,75 @@ where the most relevant information was found."""
                 response = client.models.generate_content(
                     model=model_name,
                     contents=content,
-                    config=types.GenerateContentConfig(
-                        thinking_config=types.ThinkingConfig(thinking_budget=0)
-                    )
+                    config={
+                        "response_mime_type": "application/json",
+                        "response_schema": DocumentAnalysis,
+                    }
                 )
                 model_time = time.time() - model_start
 
                 if response.text:
                     print(f"✅ [PARSE_DOC] Gemini response received in {model_time:.2f}s")
-                    print(f"📄 [PARSE_DOC] Gemini response: {response.text}")
                     logger.info("✅ [PARSE_DOC] Gemini response received in %.2fs", model_time)
-                    logger.info("📄 [PARSE_DOC] Gemini response: %s", response.text)
+                    # Use the parsed structured output directly
+                    try:
+                        # Access the parsed response object directly
+                        parsed_response: DocumentAnalysis = response.parsed
 
-                    return {
-                        "status": "success",
-                        "answer": response.text
-                    }
+                        print(f"📄 [PARSE_DOC] Raw JSON response: {response.text}")
+                        print(f"📄 [PARSE_DOC] Answer: {parsed_response.answer}")
+                        print(f"📍 [PARSE_DOC] Page number: {parsed_response.page_number}")
+                        logger.info("📄 [PARSE_DOC] Raw JSON response: %s", response.text)
+                        logger.info("📄 [PARSE_DOC] Answer: %s", parsed_response.answer)
+                        logger.info("📍 [PARSE_DOC] Page number: %s", parsed_response.page_number)
+
+                        # Format pdf_file with page number if available
+                        if parsed_response.page_number:
+                            pdf_file_formatted = f"{pdf_filename}:{parsed_response.page_number}"
+                        else:
+                            pdf_file_formatted = pdf_filename
+
+                        return {
+                            "status": "success",
+                            "answer": parsed_response.answer,
+                            "pdf_file": pdf_file_formatted
+                        }
+                    except Exception as parse_exc:
+                        print(f"⚠️ [PARSE_DOC] Failed to access parsed response: {parse_exc}")
+                        logger.warning("⚠️ [PARSE_DOC] Failed to access parsed response: %s",
+                                     parse_exc)
+                        print(f"📄 [PARSE_DOC] Raw response text: {response.text}")
+                        logger.info("📄 [PARSE_DOC] Raw response text: %s", response.text)
+
+                        # Fallback: try manual JSON parsing
+                        try:
+                            parsed_response = DocumentAnalysis.model_validate_json(response.text)
+                            print("📄 [PARSE_DOC] Fallback parsing successful")
+                            logger.info("📄 [PARSE_DOC] Fallback parsing successful")
+
+                            # Format pdf_file with page number if available
+                            if parsed_response.page_number:
+                                pdf_file_formatted = f"{pdf_filename}:{parsed_response.page_number}"
+                            else:
+                                pdf_file_formatted = pdf_filename
+
+                            return {
+                                "status": "success",
+                                "answer": parsed_response.answer,
+                                "pdf_file": pdf_file_formatted
+                            }
+                        except Exception as fallback_exc:
+                            print(f"⚠️ [PARSE_DOC] Fallback parsing also failed: "
+                                  f"{fallback_exc}")
+                            logger.warning("⚠️ [PARSE_DOC] Fallback parsing also failed: %s",
+                                         fallback_exc)
+
+                            # Final fallback to raw response
+                            return {
+                                "status": "success",
+                                "answer": response.text,
+                                "pdf_file": pdf_filename
+                            }
             except Exception as exc:
                 model_time = time.time() - model_start
                 print(f"❌ [PARSE_DOC] Model {model_name} failed in {model_time:.2f}s: {exc}")
