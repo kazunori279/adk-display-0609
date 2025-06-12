@@ -265,11 +265,12 @@ export function useADKStreaming() {
       const documentToShow = {
         filename: firstDoc.filename,
         pageNumber: firstDoc.page_number || 1,
-        basePath: `${baseUrl}/static/resources/`
+        basePath: `${baseUrl}/static/resources/`,
+        // Add a unique timestamp to force reactivity update
+        timestamp: Date.now()
       }
       
       currentDocument.value = documentToShow
-      addSystemMessage(`Displaying ${firstDoc.filename}${firstDoc.page_number ? ` (page ${firstDoc.page_number})` : ''}`)
       
       console.log("[DOCUMENT DISPLAY]", documentToShow)
     }

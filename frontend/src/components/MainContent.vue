@@ -1,32 +1,16 @@
 <template>
   <div class="layout-content-container flex flex-col max-w-[960px] flex-1">
     <!-- PDF Viewer -->
-    <div v-if="currentDocument" class="flex-1 flex flex-col bg-gray-100 rounded-lg">
-      <!-- PDF Header -->
-      <div class="flex items-center justify-between p-4 bg-white rounded-t-lg border-b">
-        <div class="flex items-center gap-3">
-          <button 
-            @click="closePDF"
-            class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-          <h3 class="text-lg font-semibold text-gray-800">{{ currentDocument.filename }}</h3>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="text-sm text-gray-600">{{ currentDocument.pageNumber ? `Page ${currentDocument.pageNumber}` : 'Document' }}</span>
-        </div>
-      </div>
-      
-      <!-- PDF iframe Container -->
-      <div class="flex-1 overflow-hidden p-4">
-        <iframe 
-          :src="pdfUrl"
-          class="w-full h-full border border-gray-300 shadow-lg bg-white rounded"
-          title="PDF Viewer"
-        ></iframe>
+    <div v-if="currentDocument" class="flex-1 overflow-hidden p-4">
+      <iframe 
+        :src="pdfUrl"
+        class="w-full h-full border border-gray-300 shadow-lg bg-white rounded"
+        title="PDF Viewer"
+        @load="() => console.log('[MainContent] iframe loaded:', pdfUrl)"
+      ></iframe>
+      <!-- Debug info -->
+      <div class="text-xs text-gray-500 mt-2">
+        Debug: {{ pdfUrl }}
       </div>
     </div>
 
@@ -54,7 +38,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 
 // Props
 const props = defineProps({
@@ -87,7 +71,12 @@ const pdfUrl = computed(() => {
   return url
 })
 
-function closePDF() {
-  emit('select-item', null)
-}
+// Debug watchers
+watch(() => props.currentDocument, (newDoc, oldDoc) => {
+  console.log('[MainContent] currentDocument changed:', { newDoc, oldDoc })
+}, { deep: true })
+
+watch(pdfUrl, (newUrl, oldUrl) => {
+  console.log('[MainContent] pdfUrl changed:', { newUrl, oldUrl })
+})
 </script>
