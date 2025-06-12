@@ -6,11 +6,15 @@ based on their content using Google's Gemini Flash model.
 
 import os
 import time
+import logging
 from pathlib import Path
 from typing import Dict
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 
 def _create_gemini_client() -> genai.Client:
@@ -38,15 +42,15 @@ def _create_gemini_client() -> genai.Client:
         if not project_id:
             raise ValueError("GOOGLE_CLOUD_PROJECT environment variable required for Vertex AI")
 
-        print(f"Using Vertex AI client (Project: {project_id}, Location: {location})")
-        print(f"Credentials: {credentials_path}")
+        logger.info("Using Vertex AI client (Project: %s, Location: %s)", project_id, location)
+        logger.info("Credentials: %s", credentials_path)
         return genai.Client(vertexai=True)
 
     # Use direct API client
     api_key = os.getenv('GOOGLE_API_KEY')
     if not api_key:
         raise ValueError("GOOGLE_API_KEY environment variable not set")
-    print("Using direct API client")
+    logger.info("Using direct API client")
     return genai.Client(api_key=api_key)
 
 
@@ -54,6 +58,7 @@ def _get_gcs_uri(pdf_filename: str) -> str:
     """Get the GCS URI for a PDF file."""
     base_uri = "gs://gcp-samples-ic0-homeai/resources/"
     return f"{base_uri}{pdf_filename}"
+
 
 
 def parse_doc_tool(query: str, pdf_filename: str) -> Dict[str, str]:
@@ -87,7 +92,8 @@ def parse_doc_tool(query: str, pdf_filename: str) -> Dict[str, str]:
 
         # Get GCS URI for the PDF file
         gcs_uri = _get_gcs_uri(pdf_filename)
-        print(f"Using GCS URI: {gcs_uri}")
+        print(f"📄 [PARSE_DOC] Using GCS URI: {gcs_uri}")
+        logger.info("📄 [PARSE_DOC] Using GCS URI: %s", gcs_uri)
 
         # Create a Part object from the GCS URI
         pdf_file_part = types.Part.from_uri(
@@ -96,19 +102,24 @@ def parse_doc_tool(query: str, pdf_filename: str) -> Dict[str, str]:
         )
 
         # Prepare the prompt
-        prompt = f"""You are analyzing a product and service manual PDF document to answer user questions.
+        prompt = f"""You are analyzing a product and service manual PDF document to \
+answer user questions.
 
 User Query: {query}
 
-Please analyze the provided PDF document and provide a comprehensive answer to the user's query based on the content you find. If the information is not available in the document, please state that clearly.
+Please analyze the provided PDF document and provide a comprehensive answer to the user's \
+query based on the content you find. If the information is not available in the document, please state that clearly.
 
 Focus on:
 1. Direct answers to the user's question
 2. Relevant details from the document
 3. Step-by-step instructions if applicable
 4. Any important warnings or notes
+5. IMPORTANT: Identify and return the page number where you found the most relevant \
+description for the user's query
 
-Please provide your response in a clear, helpful format."""
+Please provide your response in a clear, helpful format and include the page number \
+where the most relevant information was found."""
 
         # Prepare content list with PDF part and prompt
         content = [pdf_file_part, prompt]
@@ -122,22 +133,32 @@ Please provide your response in a clear, helpful format."""
         for model_name in models_to_try:
             try:
                 model_start = time.time()
-                print(f"🤖 Calling Gemini {model_name}...")
+                print(f"🤖 [PARSE_DOC] Calling Gemini {model_name}...")
+                logger.info("🤖 [PARSE_DOC] Calling Gemini %s...", model_name)
                 response = client.models.generate_content(
                     model=model_name,
-                    contents=content
+                    contents=content,
+                    config=types.GenerateContentConfig(
+                        thinking_config=types.ThinkingConfig(thinking_budget=0)
+                    )
                 )
                 model_time = time.time() - model_start
 
                 if response.text:
-                    print(f"✅ Gemini response received in {model_time:.2f}s")
+                    print(f"✅ [PARSE_DOC] Gemini response received in {model_time:.2f}s")
+                    print(f"📄 [PARSE_DOC] Gemini response: {response.text}")
+                    logger.info("✅ [PARSE_DOC] Gemini response received in %.2fs", model_time)
+                    logger.info("📄 [PARSE_DOC] Gemini response: %s", response.text)
+
                     return {
                         "status": "success",
                         "answer": response.text
                     }
             except Exception as exc:
                 model_time = time.time() - model_start
-                print(f"❌ Model {model_name} failed in {model_time:.2f}s: {exc}")
+                print(f"❌ [PARSE_DOC] Model {model_name} failed in {model_time:.2f}s: {exc}")
+                logger.error("❌ [PARSE_DOC] Model %s failed in %.2fs: %s",
+                           model_name, model_time, exc)
                 if model_name == models_to_try[-1]:
                     return {
                         "status": "error",

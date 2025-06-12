@@ -282,7 +282,8 @@ def find_document_tool(query: str) -> dict:
         query: Search query text to find relevant documents
 
     Returns:
-        Dictionary with result status and message containing search results in filename:page_number format
+        Dictionary with result status and message containing search results in \
+filename:page_number format
     """
     try:
         search_results = find_document(query)
