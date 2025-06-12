@@ -19,6 +19,7 @@ This module defines the root agent that uses Google Search tools to answer quest
 
 from google.adk.agents import Agent
 from .chromadb_search import find_document_tool, show_document_tool
+from .parse_doc import parse_doc_tool
 
 root_agent = Agent(
    # A unique name for the agent.
@@ -27,15 +28,19 @@ root_agent = Agent(
    model="gemini-2.0-flash-exp", # if this model does not work, try below
    #model="gemini-2.0-flash-live-001",
    # A short description of the agent's purpose.
-   description="Agent for answering questions about apartment manuals and building info.",
+   description="Agent for answering questions about product and service manuals and building info.",
    # Instructions to set the agent's behavior.
-   instruction="Answer questions about apartment living using the find_document_tool to find "
-              "relevant information from apartment manuals covering appliances, services, "
-              "building rules, and facilities. ALWAYS respond in the same language as the user's question. "
-              "When you receive results from find_document_tool, ALWAYS immediately use the show_document_tool "
-              "to display the documents to the user. Extract the filename and page number from each result "
-              "(format: 'filename (page X)') and use the show_document_tool with 'filename:page_number' format "
-              "(e.g., ['001.pdf:5', '023.pdf:12']). Do not ask for clarification when documents are found.",
-   # Add tools for apartment manual queries and document display.
-   tools=[find_document_tool, show_document_tool],
+   instruction=(
+       "Answer questions about apartment living using the find_document_tool to find "
+       "relevant information from product and service manuals covering appliances, services, "
+       "building rules, and facilities. ALWAYS respond in the same language as the user's question. "
+       "When you receive results from find_document_tool, ALWAYS immediately use the show_document_tool "
+       "to display the documents to the user. Extract the filename and page number from each result "
+       "(format: 'filename (page X)') and use the show_document_tool with 'filename:page_number' format "
+       "(e.g., ['001.pdf:5', '023.pdf:12']). For detailed analysis of specific documents, use the "
+       "parse_doc_tool with the PDF filename to get comprehensive answers from the document content. "
+       "Do not ask for clarification when documents are found."
+   ),
+   # Add tools for product and service manual queries, document display, and document parsing.
+   tools=[find_document_tool, show_document_tool, parse_doc_tool],
 )

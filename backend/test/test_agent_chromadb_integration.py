@@ -192,7 +192,7 @@ class TestAgentChromaDBIntegration:
         result = find_document_tool("air conditioner setup")
 
         assert result["result"] == "success"
-        assert "Found relevant apartment manual documents:" in result["message"]
+        assert "Found relevant product and service manual documents:" in result["message"]
         assert "001.pdf" in result["message"]
         assert "relevance: 0.950" in result["message"]
 
@@ -205,7 +205,7 @@ class TestAgentChromaDBIntegration:
         result = find_document_tool("Wi-Fi connection setup")
 
         assert result["result"] == "success"
-        assert "Found relevant apartment manual documents:" in result["message"]
+        assert "Found relevant product and service manual documents:" in result["message"]
         assert "025.pdf" in result["message"]
         assert "relevance: 0.870" in result["message"]
 
@@ -216,7 +216,7 @@ class TestAgentChromaDBIntegration:
 
         assert result["result"] == "success"
         lines = result["message"].split('\n')
-        assert lines[0] == "Found relevant apartment manual documents:"
+        assert lines[0] == "Found relevant product and service manual documents:"
         assert "1. 001.pdf:1 (relevance: 0.950)" in lines
         assert "2. 025.pdf:3 (relevance: 0.870)" in lines
         assert "3. 050.pdf:2 (relevance: 0.780)" in lines
@@ -295,7 +295,7 @@ class TestAgentToolIntegrationMocked:
             result = find_document_tool("test query")
 
             assert result["result"] == "success"
-            expected_message = """Found relevant apartment manual documents:
+            expected_message = """Found relevant product and service manual documents:
 1. test.pdf:1 (relevance: 0.950)"""
 
             assert result["message"] == expected_message
@@ -320,7 +320,7 @@ class TestAgentToolIntegrationMocked:
                 result = find_document_tool(query)
 
                 assert result["result"] == "success"
-                assert "Found relevant apartment manual documents:" in result["message"]
+                assert "Found relevant product and service manual documents:" in result["message"]
                 assert "result.pdf" in result["message"]
                 assert "relevance: 0.850" in result["message"]
 
@@ -403,7 +403,7 @@ class TestAgentRealIntegration:
 
             print(f"\nTesting with {len(documents)} real documents")
 
-            # Test queries that should find results in apartment manuals
+            # Test queries that should find results in product and service manuals
             test_queries = [
                 "エアコン",  # Air conditioner in Japanese
                 "Wi-Fi",     # Wi-Fi setup
@@ -424,7 +424,7 @@ class TestAgentRealIntegration:
                 assert execution_time < 5.0  # Should complete within 5 seconds
                 assert isinstance(result, str)
 
-                if "Found relevant apartment manual documents:" in result:
+                if "Found relevant product and service manual documents:" in result:
                     # If results were found, verify structure
                     lines = result.split('\n')
                     assert len(lines) >= 2  # Header + at least one result

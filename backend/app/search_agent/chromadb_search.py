@@ -8,12 +8,12 @@ This module provides the same functionality as vector_search.py but uses ChromaD
 
 import ast
 import csv
-import re
 import time
 from pathlib import Path
 from typing import List, Tuple
 import uuid
 import asyncio
+import re
 
 import chromadb
 from chromadb.config import Settings
@@ -30,6 +30,9 @@ COLLECTION_NAME = "document_embeddings"
 
 # Global queue for client messages
 client_message_queue = asyncio.Queue()
+
+# Relevancy threshold for filtering search results
+RELEVANCY_THRESHOLD = 0.920
 
 
 def _get_chroma_client():
@@ -194,106 +197,49 @@ def find_document(search_query: str, limit: int = None) -> List[Tuple[str, str, 
         print("No documents loaded in ChromaDB")
         return []
 
-    try:
-        # Query ChromaDB for more results to account for duplicates
-        # Request 20 results to filter down to 5 unique ones
-        query_results = collection.query(
-            query_embeddings=[query_embedding],
-            n_results=20,
-            include=['metadatas', 'distances']
-        )
+    # Query ChromaDB for more results to account for duplicates
+    # Request 20 results to filter down to 5 unique ones
+    query_results = collection.query(
+        query_embeddings=[query_embedding],
+        n_results=20,
+        include=['metadatas', 'distances']
+    )
 
-        similarities = []
-        seen_documents = set()  # Track (filename, page_number) combinations
-
-        if query_results['metadatas'] and query_results['distances']:
-            metadatas = query_results['metadatas'][0]
-            distances = query_results['distances'][0]
-
-            for metadata, distance in zip(metadatas, distances):
-                # ChromaDB returns distance, convert to similarity
-                # For cosine distance: similarity = 1 - distance
-                # Convert distance to similarity score
-                similarity = (
-                    1.0 / (1.0 + distance) if distance >= 0 else 1.0
-                )
-
-                filename = metadata['filename']
-                page_number = metadata.get('page_number', '')
-                page_info = metadata['page_info']
-
-                # Create unique key for deduplication
-                doc_key = (filename, page_number)
-
-                # Apply relevancy threshold (0.920) to filter out low-quality matches
-                relevancy_threshold = 0.920
-
-                # Only add if we haven't seen this filename+page combination and meets threshold
-                if doc_key not in seen_documents and similarity >= relevancy_threshold:
-                    seen_documents.add(doc_key)
-                    similarities.append((filename, page_info, similarity))
-
-                    # Stop when we have 5 unique results
-                    if len(similarities) >= 5:
-                        break
-
-        return similarities
-
-    except Exception as exc:  # pylint: disable=broad-except
-        print(f"Error querying ChromaDB: {exc}")
-        # Fallback to original method
-        return _fallback_find_document(search_query, limit)
-
-
-def _fallback_find_document(search_query: str, limit: int = None) -> List[Tuple[str, str, float]]:
-    """Fallback method using original vector search approach."""
-    query_embedding = generate_text_embedding(search_query)
-
-    if not query_embedding:
-        print("Failed to generate query embedding")
-        return []
-
-    # Load document embeddings (with optional limit)
-    documents = load_document_embeddings(limit)
-
-    if not documents:
-        print("No documents loaded")
-        return []
-
-    # Calculate similarities
     similarities = []
-    for doc_filename, doc_description, doc_embedding in documents:
-        similarity = dot_product_similarity(query_embedding, doc_embedding)
-        similarities.append((doc_filename, doc_description, similarity))
+    seen_documents = set()  # Track (filename, page_number) combinations
 
-    # Sort by similarity score (descending)
-    similarities.sort(key=lambda x: x[2], reverse=True)
+    if query_results['metadatas'] and query_results['distances']:
+        metadatas = query_results['metadatas'][0]
+        distances = query_results['distances'][0]
 
-    # Remove duplicates based on filename and page number
-    seen_documents = set()
-    unique_similarities = []
+        for metadata, distance in zip(metadatas, distances):
+            # ChromaDB returns distance, convert to similarity
+            # For cosine distance: similarity = 1 - distance
+            # Convert distance to similarity score
+            similarity = (
+                1.0 / (1.0 + distance) if distance >= 0 else 1.0
+            )
 
-    for filename, description, similarity in similarities:
-        # Extract page number from description (format: "filename (page number)")
-        page_match = re.search(r'\(page (\d+)\)', description)
-        page_number = page_match.group(1) if page_match else ''
+            filename = metadata['filename']
+            page_number = metadata.get('page_number', '')
+            page_info = metadata['page_info']
 
-        # Create unique key for deduplication
-        doc_key = (filename, page_number)
+            # Create unique key for deduplication
+            doc_key = (filename, page_number)
 
-        # Apply relevancy threshold (0.920) to filter out low-quality matches
-        relevancy_threshold = 0.920
+            # Apply relevancy threshold to filter out low-quality matches
+            # Only add if we haven't seen this filename+page combination and meets threshold
+            if doc_key not in seen_documents and similarity >= RELEVANCY_THRESHOLD:
+                seen_documents.add(doc_key)
+                similarities.append((filename, page_info, similarity))
 
-        # Only add if we haven't seen this filename+page combination and meets threshold
-        if doc_key not in seen_documents and similarity >= relevancy_threshold:
-            seen_documents.add(doc_key)
-            unique_similarities.append((filename, description, similarity))
+                # Stop when we have 5 unique results
+                if len(similarities) >= 5:
+                    break
 
-            # Stop when we have 5 unique results
-            if len(unique_similarities) >= 5:
-                break
+    return similarities
 
-    return unique_similarities
+
 
 
 def reset_collection():
@@ -309,9 +255,9 @@ def reset_collection():
 
 
 def find_document_tool(query: str) -> dict:
-    """Search comprehensive apartment manual documents for relevant information.
+    """Search comprehensive product and service manual documents for relevant information.
 
-    This function searches through apartment manual documents using vector similarity
+    This function searches through product and service manual documents using vector similarity
     to find the most relevant information for the given query.
 
     DOCUMENT COVERAGE:
@@ -348,10 +294,9 @@ def find_document_tool(query: str) -> dict:
             }
 
         # Format results in filename:page_number format for the agent
-        formatted_results = ["Found relevant apartment manual documents:"]
+        formatted_results = ["Found relevant product and service manual documents:"]
         for i, (filename, description, score) in enumerate(search_results, 1):
             # Extract page number from description (format: "filename (page X)")
-            import re
             page_match = re.search(r'\(page (\d+)\)', description)
             if page_match:
                 page_number = page_match.group(1)
@@ -374,13 +319,13 @@ def find_document_tool(query: str) -> dict:
 def show_document_tool(pdf_files: List[str]) -> dict:
     """Display PDF documents to the user.
 
-    Use this tool to show specific apartment manual PDF documents to the user.
+    Use this tool to show specific product and service manual PDF documents to the user.
     This will open the documents in the user's interface for viewing.
 
     Args:
         pdf_files: List of PDF filenames with optional page numbers using format
                   "filename:page_number" (e.g., ["001.pdf:5", "023.pdf:12", "007.pdf"])
-                  If no page number is specified, the document opens at the first page.
+                  If no page number is specified, document opens at the first page.
 
     Returns:
         Dictionary with the result of the document display action
@@ -459,7 +404,7 @@ def show_document_tool(pdf_files: List[str]) -> dict:
 def initialize_chromadb_on_startup():
     """Initialize ChromaDB with all documents and run a test query on server startup."""
 
-    print("🚀 Initializing ChromaDB with all 34k+ apartment manual documents...")
+    print("🚀 Initializing ChromaDB with all 34k+ product and service manual documents...")
     start_time = time.time()
 
     # Reset collection to start fresh
@@ -483,12 +428,12 @@ def initialize_chromadb_on_startup():
 
     print(f"✅ Test query completed in {test_time:.2f} seconds")
     print(f"🎯 ChromaDB initialization complete in {total_time:.2f} seconds")
-    print(f"📊 Ready to search {len(documents)} apartment manual documents")
+    print(f"📊 Ready to search {len(documents)} product and service manual documents")
 
     # Show test result preview
     if isinstance(test_result, dict) and test_result.get("result") == "success":
         message = test_result.get("message", "")
-        if "Found relevant apartment manual documents:" in message:
+        if "Found relevant product and service manual documents:" in message:
             lines = message.split('\n')
             print("🔍 Test query result preview:")
             for line in lines[:4]:  # Show first 4 lines
@@ -500,7 +445,7 @@ def initialize_chromadb_on_startup():
 
 
 # ADK Function Tools are defined above:
-# - find_document_tool: Search apartment manual documents
+# - find_document_tool: Search product and service manual documents
 # - show_document_tool: Display PDF documents to the user
 
 

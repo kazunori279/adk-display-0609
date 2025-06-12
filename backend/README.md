@@ -15,7 +15,7 @@ The backend server consists of:
 
 - **Real-time Streaming**: Server-Sent Events (SSE) for agent-to-client communication
 - **Audio Support**: PCM audio streaming with Base64 encoding
-- **Document Search**: ChromaDB-powered search through 70+ apartment manual PDFs (34,504+ documents)
+- **Document Search**: ChromaDB-powered search through 70+ product and service manual PDFs (34,504+ documents)
 - **Multi-modal**: Supports both TEXT and AUDIO response modalities
 - **Cross-platform**: Works on macOS, Linux, and Windows
 
@@ -40,15 +40,7 @@ echo "GOOGLE_API_KEY=your_api_key_here" > .env
 ### Running the Server
 
 ```bash
-# Method 1: Using run script (recommended)
 ./run.sh
-
-# Method 2: Direct uvicorn command
-python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-# Method 3: Direct Python execution
-cd app
-python main.py
 ```
 
 The server will be available at: <http://localhost:8000>
@@ -82,7 +74,7 @@ python -m pytest test/test_agent_chromadb_integration.py
 
 3. **Server Integration Test** (`test/test_server_full.py`):
    - Comprehensive end-to-end server testing
-   - 20 Japanese queries testing apartment manual search
+   - 20 Japanese queries testing product and service manual search
    - Document display functionality verification
    - Server startup and ChromaDB initialization
 
@@ -145,14 +137,14 @@ The comprehensive server test typically achieves:
 
 The server includes a powerful document search system:
 
-- **34,504+ document chunks** from 70 apartment manual PDFs
+- **34,504+ document chunks** from 70 product and service manual PDFs
 - **Vector embeddings** for semantic search
 - **Relevancy filtering** with configurable thresholds
 - **Deduplication** to avoid showing the same document multiple times
 
 ### Document Categories
 
-The system covers comprehensive apartment manual documentation:
+The system covers comprehensive product and service manual documentation:
 
 - **HOME APPLIANCES**: Air conditioners, humidifiers, vacuum cleaners, washing machines, rice cookers
 - **KITCHEN EQUIPMENT**: Coffee machines, dishwashers, microwave ovens, steam ovens
@@ -165,7 +157,7 @@ The system covers comprehensive apartment manual documentation:
 
 ### Search Tool Usage
 
-The agent automatically uses the document search tool when users ask apartment-related questions. Example queries:
+The agent automatically uses the document search tool when users ask product and service-related questions. Example queries:
 
 ```text
 "エアコンの使い方は？" (How to use air conditioner?)

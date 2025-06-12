@@ -365,7 +365,7 @@ class ServerTester:
 
             # Check for document loading
             if "📊 Ready to search" in log_content:
-                pattern = r"📊 Ready to search (\d+) apartment manual documents"
+                pattern = r"📊 Ready to search (\d+) product and service manual documents"
                 match = re.search(pattern, log_content)
                 if match:
                     doc_count = match.group(1)
