@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import List, Tuple
 import uuid
 import asyncio
-import re
 
 import chromadb
 from chromadb.config import Settings
@@ -230,7 +229,6 @@ def find_document(search_query: str, limit: int = None) -> List[Tuple[str, str, 
                         'max_similarity': 0.0,
                         'page_info': page_info
                     }
-                
                 document_scores[filename]['count'] += 1
                 if similarity > document_scores[filename]['max_similarity']:
                     document_scores[filename]['max_similarity'] = similarity
@@ -307,7 +305,7 @@ filenames only (no page numbers)
 
         # Format results with filename only (no page numbers) for the agent
         formatted_results = ["Found relevant product and service manual documents:"]
-        for i, (filename, description, score) in enumerate(search_results, 1):
+        for i, (filename, _, score) in enumerate(search_results, 1):
             formatted_results.append(f"{i}. {filename} (relevance: {score:.3f})")
 
         return {
