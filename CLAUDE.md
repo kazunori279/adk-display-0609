@@ -53,6 +53,35 @@ Always run these commands when making changes:
 - **markdownlint**: Use markdownlint for Markdown formatting
 - **Tests**: Run relevant tests before committing changes
 
+#### Backend Testing
+
+```bash
+cd backend
+pytest test/                    # Run all backend tests
+pytest test/test_show_document_integration.py  # Run specific test file
+python test/test_server_full.py # Run comprehensive server test (20 queries)
+```
+
+#### Comprehensive Server Test
+
+The `test_server_full.py` script provides end-to-end testing of the entire system:
+
+- **Duration**: ~5-10 minutes (processes 20 test queries)
+- **Coverage**: Tests Wi-Fi setup, appliances, building services, safety equipment
+- **Languages**: Japanese queries covering real-world use cases
+- **Verification**: Checks ChromaDB initialization, agent responses, show_document functionality
+- **Output**: Leaves test server running on localhost:8000 for manual testing
+
+**Test Queries Include**:
+
+- Wi-Fi and internet connectivity
+- Air conditioning and heating systems  
+- Kitchen appliances (microwave, dishwasher, coffee maker, rice cooker)
+- Laundry and cleaning equipment
+- Building services and parking rules
+- Safety equipment and evacuation procedures
+- Troubleshooting scenarios
+
 ## Current Assets and Structure
 
 ### Backend Assets (`backend/`)

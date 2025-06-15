@@ -22,9 +22,11 @@ import os
 import json
 import base64
 import warnings
+import asyncio
 
 from pathlib import Path
 from dotenv import load_dotenv
+import certifi
 
 from google.genai.types import (
     Part,
@@ -41,7 +43,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.google_search_agent.agent import root_agent
+from app.search_agent.agent import root_agent
+from app.search_agent.chromadb_search import initialize_chromadb_on_startup, client_message_queue
 
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
 
@@ -51,6 +54,9 @@ warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
 
 # Load Gemini API Key
 load_dotenv()
+
+# Set SSL certificate file for secure API connections
+os.environ['SSL_CERT_FILE'] = certifi.where()
 
 APP_NAME = "ADK Streaming example"
 
@@ -89,6 +95,15 @@ async def start_agent_session(user_id, is_audio=False):
 async def agent_to_client_sse(live_events):
     """Agent to client communication via SSE"""
     async for event in live_events:
+        # Check for queued messages from function tools (e.g., show_document_tool)
+        try:
+            while not client_message_queue.empty():
+                queued_message = client_message_queue.get_nowait()
+                yield f"data: {json.dumps(queued_message)}\n\n"
+                print(f"[FUNCTION TOOL TO CLIENT]: {queued_message}")
+        except asyncio.QueueEmpty:
+            pass
+        
         # If the turn complete or interrupted, send it
         if event.turn_complete or event.interrupted:
             message = {
@@ -142,6 +157,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Initialize ChromaDB with all documents on startup
+print("🔧 Starting ChromaDB initialization...")
+initialize_chromadb_on_startup()
+print("🎉 ChromaDB initialization complete - server ready!")
 
 STATIC_DIR = Path(__file__).parent / "static"
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
