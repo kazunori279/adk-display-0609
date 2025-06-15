@@ -1,6 +1,21 @@
 <template>
   <div class="layout-content-container flex flex-col max-w-[960px] flex-1">
-    <div class="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-3 p-4">
+    <!-- PDF Viewer -->
+    <div v-if="currentDocument" class="flex-1 overflow-hidden p-4">
+      <iframe 
+        :src="pdfUrl"
+        class="w-full h-full border border-gray-300 shadow-lg bg-white rounded"
+        title="PDF Viewer"
+        @load="() => console.log('[MainContent] iframe loaded:', pdfUrl)"
+      ></iframe>
+      <!-- Debug info -->
+      <div class="text-xs text-gray-500 mt-2">
+        Debug: {{ pdfUrl }}
+      </div>
+    </div>
+
+    <!-- Default Content Grid (when no PDF is displayed) -->
+    <div v-else class="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-3 p-4">
       <div 
         v-for="item in contentItems" 
         :key="item.id"
@@ -13,25 +28,55 @@
         ></div>
         <p class="text-text-primary text-base font-medium leading-normal">{{ item.title }}</p>
       </div>
+      
+      <!-- No content message -->
+      <div v-if="contentItems.length === 0" class="col-span-full text-center py-8">
+        <p class="text-gray-500">No documents to display. Ask the AI to show you a document!</p>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 
-const contentItems = ref([
-  {
-    id: 1,
-    title: 'The Future of AI',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCKf13lxQSJUOmTA5Cq-NejRGV_mnaq3zWw2NyEh5LqPDFeKWeGB8mq-afTokwKGDkRnhKOvrdaoxd5jPlDhcJYQ77HsXzh3ck59cG9yspo4khPXcrmM82siIyZwFUElJcDHjvOx2i6UY_6_As9htprCQHc_xRjo5Qbia2_VxBLtkKLGta5AxKq26PozBeoN8QIClvVE6cEpmD3Hh8JR7PRMvYmTVY76wMTKSKqI3phXvNJxbW_9r5-nuOcgFZ02jPfY-k3V4p4Obo'
-  },
-  // You can add more content items here
-])
+// Props
+const props = defineProps({
+  currentDocument: {
+    type: Object,
+    default: null
+  }
+})
+
+// State
+const contentItems = ref([])
 
 const emit = defineEmits(['select-item'])
 
 const selectItem = (item) => {
   emit('select-item', item)
 }
+
+// Computed property for PDF URL
+const pdfUrl = computed(() => {
+  if (!props.currentDocument) return ''
+  
+  let url = `${props.currentDocument.basePath}${props.currentDocument.filename}`
+  
+  // Add page fragment if specified
+  if (props.currentDocument.pageNumber) {
+    url += `#page=${props.currentDocument.pageNumber}`
+  }
+  
+  return url
+})
+
+// Debug watchers
+watch(() => props.currentDocument, (newDoc, oldDoc) => {
+  console.log('[MainContent] currentDocument changed:', { newDoc, oldDoc })
+}, { deep: true })
+
+watch(pdfUrl, (newUrl, oldUrl) => {
+  console.log('[MainContent] pdfUrl changed:', { newUrl, oldUrl })
+})
 </script>

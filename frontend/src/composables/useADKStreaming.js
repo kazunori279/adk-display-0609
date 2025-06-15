@@ -10,6 +10,9 @@ export function useADKStreaming() {
   const isAudioEnabled = ref(false)
   const messages = ref([])
   
+  // Document display state
+  const currentDocument = ref(null)
+  
   // Audio state
   const audioState = reactive({
     playerNode: null,
@@ -38,7 +41,6 @@ export function useADKStreaming() {
     eventSource.onopen = function () {
       console.log("SSE connection opened.")
       isConnected.value = true
-      addSystemMessage("Connection opened")
     }
 
     eventSource.onmessage = function (event) {
@@ -65,6 +67,12 @@ export function useADKStreaming() {
         audioState.playerNode.port.postMessage(base64ToArray(messageFromServer.data))
       }
 
+      // If it's a document command, handle it
+      if (messageFromServer.mime_type === "application/json") {
+        handleDocumentCommand(messageFromServer.data)
+        return
+      }
+
       // If it's text, display it
       if (messageFromServer.mime_type === "text/plain") {
         // Add a new message for a new turn
@@ -78,10 +86,9 @@ export function useADKStreaming() {
       }
     }
 
-    eventSource.onerror = function (event) {
+    eventSource.onerror = function () {
       console.log("SSE connection error or closed.")
       isConnected.value = false
-      addSystemMessage("Connection closed")
       eventSource.close()
       
       // Auto-reconnect after 5 seconds
@@ -171,8 +178,6 @@ export function useADKStreaming() {
         eventSource.close()
         connectSSE()
       }
-      
-      addSystemMessage("Audio enabled")
     } catch (error) {
       console.error('Error starting audio:', error)
       addSystemMessage("Failed to start audio: " + error.message)
@@ -206,7 +211,6 @@ export function useADKStreaming() {
     })
 
     isAudioEnabled.value = false
-    addSystemMessage("Audio disabled")
   }
 
   // Audio recorder handler
@@ -251,6 +255,27 @@ export function useADKStreaming() {
     audioState.audioBuffer = []
   }
 
+  // Handle document display commands
+  function handleDocumentCommand(commandData) {
+    console.log("[DOCUMENT COMMAND]", commandData)
+    
+    if (commandData.command === "show_document" && commandData.params && commandData.params.length > 0) {
+      // Display the first document from the params
+      const firstDoc = commandData.params[0]
+      const documentToShow = {
+        filename: firstDoc.filename,
+        pageNumber: firstDoc.page_number || 1,
+        basePath: 'https://storage.mtls.cloud.google.com/gcp-samples-ic0-homeai/resources/',
+        // Add a unique timestamp to force reactivity update
+        timestamp: Date.now()
+      }
+      
+      currentDocument.value = documentToShow
+      
+      console.log("[DOCUMENT DISPLAY]", documentToShow)
+    }
+  }
+
   // Initialize connection
   connectSSE()
 
@@ -259,6 +284,7 @@ export function useADKStreaming() {
     isConnected,
     isAudioEnabled,
     messages,
+    currentDocument,
     
     // Actions
     sendTextMessage,

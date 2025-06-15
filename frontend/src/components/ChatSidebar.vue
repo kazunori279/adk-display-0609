@@ -1,5 +1,15 @@
 <template>
   <div class="layout-content-container flex flex-col w-80">
+    <!-- App Title -->
+    <div class="flex items-center gap-4 text-text-primary px-4 py-3 border-b border-gray-200">
+      <div class="size-4">
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="currentColor"></path>
+        </svg>
+      </div>
+      <h2 class="text-text-primary text-lg font-bold leading-tight tracking-[-0.015em]">ADK Home AI</h2>
+    </div>
+
     <!-- Connection Status -->
     <div class="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-lg mb-2">
       <div :class="[
@@ -13,7 +23,7 @@
     </div>
 
     <!-- Messages Container -->
-    <div class="flex-1 overflow-y-auto px-4 py-2 space-y-3 min-h-[300px] max-h-[400px] border rounded-lg bg-gray-50">
+    <div ref="messagesContainer" class="flex-1 overflow-y-auto px-4 py-2 space-y-3 min-h-[300px] max-h-[400px] border rounded-lg bg-gray-50">
       <div
         v-for="msg in messages"
         :key="msg.id"
@@ -94,7 +104,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 
 // Props
 const props = defineProps({
@@ -113,6 +123,7 @@ const props = defineProps({
 })
 
 const message = ref('')
+const messagesContainer = ref(null)
 
 const agentAvatar = "https://lh3.googleusercontent.com/aida-public/AB6AXuB9WWgemwMAqIH4PmxNrsG1-sLvxiJtO1B94vbNpp5w3y9yqIA10-SR9LzKYImSHv9OkYfhV4SuJ4aZ3hdmV3GPFDdqd8z6W3pTGPsB_2CTm3SLhIb4op0rLr1zpbou4xjwfegnVNxERGB7JEg6T6HPPHNEJOavWPOp0eMB8fVsXuPMmTcOQJsW2amlCIB7Fv0VBfxNz8MvXOM_rv_73Ls_qZ1M3lPBBeoSI6qFMjcR54jyMftdyYckt4lHJfaT6pmcHzcHQAgvvAY"
 const userAvatar = "https://lh3.googleusercontent.com/aida-public/AB6AXuDp1kg-Yfif67FuqEkbIO3VZbIDlRvHKW-8cuLvAX_wyyoBavqNzqXNZJo3Vq5ZIKKu-V4H0XmcO-rEk9kLL7sxtIUQPuO8zsM0iCpjbNS0xBZsz2B6Kc93LadJGz5jn0mEvKbrL4PpcHH2ARBTRiL2PMY-WmhI-swPnkcBe4dWD8XKt2Q1OyGf7s1KKRcCJvZMknlx8862xMY41t56NmSvj5jnIJMlxY0hn87v42Betz3dgh_Hu_odHhWsTLP-RMoXuSEEW24sgp4"
@@ -123,6 +134,8 @@ const sendMessage = () => {
   if (message.value.trim() && props.isConnected) {
     emit('send-message', message.value)
     message.value = ''
+    // Scroll to bottom after sending message
+    scrollToBottom()
   }
 }
 
@@ -141,4 +154,25 @@ const formatTime = (timestamp) => {
     hour12: true 
   })
 }
+
+// Auto-scroll to bottom when new messages are added
+const scrollToBottom = () => {
+  if (messagesContainer.value) {
+    nextTick(() => {
+      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+    })
+  }
+}
+
+// Watch for new messages and scroll to bottom
+watch(() => props.messages, (newMessages, oldMessages) => {
+  if (newMessages.length > (oldMessages?.length || 0)) {
+    scrollToBottom()
+  }
+}, { deep: true })
+
+// Watch for message content updates (e.g., streaming text)
+watch(() => props.messages.map(msg => msg.content), () => {
+  scrollToBottom()
+}, { deep: true })
 </script>
