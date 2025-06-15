@@ -40,6 +40,7 @@ class TestShowDocumentIntegration:
         if not os.getenv('GOOGLE_API_KEY'):
             pytest.skip("GOOGLE_API_KEY not found in environment")
 
+    @pytest.mark.asyncio
     async def test_show_document_tool_direct(self):
         """Test show_document_tool function directly."""
         # Clear the queue first
@@ -49,17 +50,15 @@ class TestShowDocumentIntegration:
             except asyncio.QueueEmpty:
                 break
 
-        # Test with valid PDF files
-        pdf_files = ["001.pdf:5", "023.pdf:12", "007.pdf"]
-        result = show_document_tool(pdf_files)
+        # Test with valid PDF file
+        pdf_file = "001.pdf:5"
+        result = show_document_tool(pdf_file)
 
         # Check return value
         assert result["status"] == "success"
         assert result["action"] == "document_display_queued"
-        assert result["count"] == 3
+        assert result["count"] == 1
         assert "001.pdf (page 5)" in result["documents"]
-        assert "023.pdf (page 12)" in result["documents"]
-        assert "007.pdf" in result["documents"]
 
         # Check that message was queued
         assert not client_message_queue.empty()
@@ -70,26 +69,17 @@ class TestShowDocumentIntegration:
 
         command_data = message["data"]
         assert command_data["command"] == "show_document"
-        assert len(command_data["params"]) == 3
+        assert len(command_data["params"]) == 1
 
-        # Verify individual documents
+        # Verify the single document
         params = command_data["params"]
 
         # Check 001.pdf with page 5
-        pdf_001 = next((p for p in params if p["filename"] == "001.pdf"), None)
-        assert pdf_001 is not None
+        pdf_001 = params[0]
+        assert pdf_001["filename"] == "001.pdf"
         assert pdf_001["page_number"] == 5
 
-        # Check 023.pdf with page 12
-        pdf_023 = next((p for p in params if p["filename"] == "023.pdf"), None)
-        assert pdf_023 is not None
-        assert pdf_023["page_number"] == 12
-
-        # Check 007.pdf without page number
-        pdf_007 = next((p for p in params if p["filename"] == "007.pdf"), None)
-        assert pdf_007 is not None
-        assert "page_number" not in pdf_007
-
+    @pytest.mark.asyncio
     async def test_show_document_tool_with_agent(self):
         """Test show_document_tool integration with ADK agent."""
         # Clear the queue first
@@ -179,6 +169,7 @@ class TestShowDocumentIntegration:
             print(f"⚠️  Agent responded about documents but didn't use show_document_tool: "
                   f"{response_preview}...")
 
+    @pytest.mark.asyncio
     async def test_show_document_tool_error_cases(self):
         """Test show_document_tool error handling."""
         # Clear the queue first
@@ -188,13 +179,13 @@ class TestShowDocumentIntegration:
             except asyncio.QueueEmpty:
                 break
 
-        # Test with empty list
-        result = show_document_tool([])
+        # Test with empty string
+        result = show_document_tool("")
         assert result["status"] == "error"
-        assert "No PDF files specified" in result["message"]
+        assert "No PDF file specified" in result["message"]
 
         # Test with invalid format
-        result = show_document_tool(["invalid_file.txt"])
+        result = show_document_tool("invalid_file.txt")
         assert result["status"] == "success"  # It still processes, just treats as filename
 
         # Queue should have one message for the second test
@@ -202,6 +193,7 @@ class TestShowDocumentIntegration:
         message = client_message_queue.get_nowait()
         assert message["data"]["params"][0]["filename"] == "invalid_file.txt"
 
+    @pytest.mark.asyncio
     async def test_queue_message_format(self):
         """Test that queued messages have the exact required format."""
         # Clear the queue first
@@ -212,8 +204,8 @@ class TestShowDocumentIntegration:
                 break
 
         # Test specific format
-        pdf_files = ["001.pdf:3"]
-        show_document_tool(pdf_files)
+        pdf_file = "001.pdf:3"
+        show_document_tool(pdf_file)
 
         # Get and verify message format
         message = client_message_queue.get_nowait()
