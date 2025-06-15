@@ -265,7 +265,7 @@ export function useADKStreaming() {
       const documentToShow = {
         filename: firstDoc.filename,
         pageNumber: firstDoc.page_number || 1,
-        basePath: `${baseUrl}/static/resources/`,
+        basePath: 'https://storage.mtls.cloud.google.com/gcp-samples-ic0-homeai/resources/',
         // Add a unique timestamp to force reactivity update
         timestamp: Date.now()
       }
