@@ -24,3 +24,26 @@ class DocumentQueries(BaseModel):
 
     description: str
     sections: List[QuerySection]
+
+
+class Subsection(BaseModel):
+    """Model for a document subsection."""
+    
+    name: str
+    text: str
+    page_number: int
+
+
+class Section(BaseModel):
+    """Model for a document section."""
+    
+    name: str
+    subsections: List[Subsection]
+
+
+class DocumentStructure(BaseModel):
+    """Model for structured document JSON output."""
+    
+    title: str
+    summary: str
+    sections: List[Section]

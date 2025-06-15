@@ -36,14 +36,6 @@ python main.py       # Start FastAPI server
 
 ### Index Building (Python)
 
-```bash
-cd index-building
-pip install -r requirements.txt
-pytest              # Run all tests
-pytest -m "not integration"  # Skip integration tests
-python process_all_pdfs.py   # Process all 70 PDF documents (multi-threaded)
-python demo_pdf_to_csv.py    # Process single PDF for testing
-```
 
 ### Code Quality and Testing
 
@@ -121,11 +113,6 @@ The `test_server_full.py` script provides end-to-end testing of the entire syste
 
 ### Index Building Tools (`index-building/`)
 
-- **Core Processing**: `process_all_pdfs.py` - Multi-threaded PDF processor (10 threads)
-- **Utilities**: `generate_chunks.py`, `csv_utils.py`, `gemini_utils.py`
-- **Data Models**: `models.py` - Pydantic models for document queries
-- **Test Suite**: 8 test files including integration tests for embeddings
-- **Data**: `data/file_description.csv` - Large dataset with 34,505+ entries
 
 ## Key Technical Details
 
