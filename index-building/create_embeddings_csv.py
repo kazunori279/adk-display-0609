@@ -144,7 +144,7 @@ def generate_embeddings_multithreaded(texts: List[str],
                         completed_count += 1
                 else:
                     # Add empty embeddings for failed batch to maintain alignment
-                    empty_embedding = [0.0] * 768
+                    empty_embedding = [0.0] * 128
                     for batch_index in batch_indices:
                         all_embeddings[batch_index] = empty_embedding
                         error_count += 1
@@ -206,26 +206,27 @@ def generate_embeddings_multithreaded(texts: List[str],
 
 def write_embeddings_csv(rows: List[Dict[str, str]],
                         embeddings: List[List[float]], output_path: Path):
-    """Write the new CSV file with embeddings column."""
+    """Write the new CSV file with filename, page number, and embeddings columns."""
     if len(rows) != len(embeddings):
         raise ValueError(f"Mismatch: {len(rows)} rows but {len(embeddings)} embeddings")
 
-    # Get original fieldnames and add embeddings
-    original_fieldnames = list(rows[0].keys()) if rows else []
-    fieldnames = original_fieldnames + ['embeddings']
+    # Include filename, page number, and embeddings columns
+    fieldnames = ['pdf_filename', 'subsection_pdf_page_number', 'embeddings']
 
     with open(output_path, 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
 
         for row, embedding in zip(rows, embeddings):
-            # Create new row with all original data plus embeddings
-            new_row = row.copy()
-            # Convert embedding to JSON string for CSV storage
-            new_row['embeddings'] = json.dumps(embedding)
+            # Create new row with filename, page number, and embeddings
+            new_row = {
+                'pdf_filename': row.get('pdf_filename', ''),
+                'subsection_pdf_page_number': row.get('subsection_pdf_page_number', ''),
+                'embeddings': json.dumps(embedding)
+            }
             writer.writerow(new_row)
 
-    print(f"✓ Wrote {len(rows):,} rows with embeddings to {output_path}")
+    print(f"✓ Wrote {len(rows):,} rows with filename, page number, and embeddings to {output_path}")
 
 
 def main():
@@ -278,9 +279,9 @@ def main():
         write_embeddings_csv(rows, embeddings, output_csv)
 
         print(f"\n✅ Successfully created {output_csv}")
-        print(f"   Original columns: {len(rows[0].keys()) if rows else 0}")
-        print(f"   New columns: {len(rows[0].keys()) + 1 if rows else 1}")
+        print(f"   Output columns: pdf_filename, subsection_pdf_page_number, embeddings")
         print(f"   Total rows: {len(rows):,}")
+        print(f"   Embedding dimensions: 128")
 
     except KeyboardInterrupt:
         print("\n⚠️  Process interrupted by user")

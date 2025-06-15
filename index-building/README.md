@@ -112,12 +112,12 @@ python create_embeddings_csv.py
 
 **Input:** `data/file_description.csv` (generated from PDF processing)
 
-**Output:** `data/file_desc_emb.csv` (original data + embeddings column)
+**Output:** `data/file_desc_emb.csv` (simplified format with filename, page number, and embeddings)
 
 **Embedding Details:**
 
 - **Model:** `text-multilingual-embedding-002` (Vertex AI)
-- **Dimensions:** 768
+- **Dimensions:** 128
 - **Task Type:** `SEMANTIC_SIMILARITY`
 - **Input:** Concatenated "description + query" text
 
@@ -142,9 +142,9 @@ python create_embeddings_csv.py
 
 ## Output Format
 
-### CSV Output Structure
+### Input CSV Format (file_description.csv)
 
-The generated CSV contains the following columns:
+The input CSV from PDF processing contains the following columns:
 
 | Column | Description |
 |--------|-------------|
@@ -154,7 +154,16 @@ The generated CSV contains the following columns:
 | `subsection_name` | Specific subsection within the section |
 | `subsection_pdf_page_number` | Page number where subsection starts |
 | `query` | Generated search query in Japanese |
-| `embeddings` | Vector embeddings (768 dimensions, JSON format) |
+
+### Output CSV Format (file_desc_emb.csv)
+
+The output CSV with embeddings contains:
+
+| Column | Description |
+|--------|-------------|
+| `pdf_filename` | Source PDF file (e.g., "001.pdf") |
+| `subsection_pdf_page_number` | Page number where subsection starts |
+| `embeddings` | Vector embeddings (128 dimensions, JSON format) |
 
 ### PDF File Management
 
