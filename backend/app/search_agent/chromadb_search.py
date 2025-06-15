@@ -170,7 +170,7 @@ def dot_product_similarity(vec1: List[float], vec2: List[float]) -> float:
 
 
 def find_document(search_query: str, limit: int = None) -> List[Tuple[str, str, float]]:
-    """Find top 5 unique documents most similar to the query using ChromaDB.
+    """Find top 3 documents most similar to the query using ChromaDB.
 
     Args:
         search_query: Search query text
@@ -178,8 +178,9 @@ def find_document(search_query: str, limit: int = None) -> List[Tuple[str, str, 
 
     Returns:
         List of tuples containing (filename, description, similarity_score)
-        sorted by similarity score in descending order (top 5 unique results)
+        sorted by document frequency (count) and similarity score (top 3 results)
         Results are filtered by relevancy threshold of 0.920 to remove low-quality matches.
+        Documents are ranked by: 1) count of pages per document, 2) highest similarity score.
     """
     # Generate embedding for the query
     query_embedding = generate_text_embedding(search_query)
@@ -197,16 +198,14 @@ def find_document(search_query: str, limit: int = None) -> List[Tuple[str, str, 
         print("No documents loaded in ChromaDB")
         return []
 
-    # Query ChromaDB for more results to account for duplicates
-    # Request 20 results to filter down to 5 unique ones
+    # Query ChromaDB for top 10 results to analyze document frequency
     query_results = collection.query(
         query_embeddings=[query_embedding],
-        n_results=20,
+        n_results=10,
         include=['metadatas', 'distances']
     )
 
-    similarities = []
-    seen_documents = set()  # Track (filename, page_number) combinations
+    document_scores = {}  # filename -> {'count': int, 'max_similarity': float, 'page_info': str}
 
     if query_results['metadatas'] and query_results['distances']:
         metadatas = query_results['metadatas'][0]
@@ -220,22 +219,34 @@ def find_document(search_query: str, limit: int = None) -> List[Tuple[str, str, 
                 1.0 / (1.0 + distance) if distance >= 0 else 1.0
             )
 
-            filename = metadata['filename']
-            page_number = metadata.get('page_number', '')
-            page_info = metadata['page_info']
-
-            # Create unique key for deduplication
-            doc_key = (filename, page_number)
-
             # Apply relevancy threshold to filter out low-quality matches
-            # Only add if we haven't seen this filename+page combination and meets threshold
-            if doc_key not in seen_documents and similarity >= RELEVANCY_THRESHOLD:
-                seen_documents.add(doc_key)
-                similarities.append((filename, page_info, similarity))
+            if similarity >= RELEVANCY_THRESHOLD:
+                filename = metadata['filename']
+                page_info = metadata['page_info']
 
-                # Stop when we have 5 unique results
-                if len(similarities) >= 5:
-                    break
+                if filename not in document_scores:
+                    document_scores[filename] = {
+                        'count': 0,
+                        'max_similarity': 0.0,
+                        'page_info': page_info
+                    }
+                
+                document_scores[filename]['count'] += 1
+                if similarity > document_scores[filename]['max_similarity']:
+                    document_scores[filename]['max_similarity'] = similarity
+                    document_scores[filename]['page_info'] = page_info
+
+    # Sort documents by: 1) count (descending), 2) max_similarity (descending)
+    sorted_documents = sorted(
+        document_scores.items(),
+        key=lambda x: (x[1]['count'], x[1]['max_similarity']),
+        reverse=True
+    )
+
+    # Return top 3 documents
+    similarities = []
+    for filename, doc_data in sorted_documents[:3]:
+        similarities.append((filename, doc_data['page_info'], doc_data['max_similarity']))
 
     return similarities
 
@@ -282,8 +293,8 @@ def find_document_tool(query: str) -> dict:
         query: Search query text to find relevant documents
 
     Returns:
-        Dictionary with result status and message containing search results in \
-filename:page_number format
+        Dictionary with result status and message containing search results with \
+filenames only (no page numbers)
     """
     try:
         search_results = find_document(query)
@@ -294,16 +305,10 @@ filename:page_number format
                 "message": "No documents found for your query."
             }
 
-        # Format results in filename:page_number format for the agent
+        # Format results with filename only (no page numbers) for the agent
         formatted_results = ["Found relevant product and service manual documents:"]
         for i, (filename, description, score) in enumerate(search_results, 1):
-            # Extract page number from description (format: "filename (page X)")
-            page_match = re.search(r'\(page (\d+)\)', description)
-            if page_match:
-                page_number = page_match.group(1)
-                formatted_results.append(f"{i}. {filename}:{page_number} (relevance: {score:.3f})")
-            else:
-                formatted_results.append(f"{i}. {filename} (relevance: {score:.3f})")
+            formatted_results.append(f"{i}. {filename} (relevance: {score:.3f})")
 
         return {
             "result": "success",

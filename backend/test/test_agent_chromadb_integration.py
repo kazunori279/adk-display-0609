@@ -211,15 +211,15 @@ class TestAgentChromaDBIntegration:
 
     @pytest.mark.asyncio
     async def test_agent_search_tool_formatting(self, mock_chromadb_data):
-        """Test that search tool formats results correctly."""
+        """Test that search tool formats results correctly (filename only, no page numbers)."""
         result = find_document_tool("network configuration")
 
         assert result["result"] == "success"
         lines = result["message"].split('\n')
         assert lines[0] == "Found relevant product and service manual documents:"
-        assert "1. 001.pdf:1 (relevance: 0.950)" in lines
-        assert "2. 025.pdf:3 (relevance: 0.870)" in lines
-        assert "3. 050.pdf:2 (relevance: 0.780)" in lines
+        assert "1. 001.pdf (relevance: 0.950)" in lines
+        assert "2. 025.pdf (relevance: 0.870)" in lines
+        assert "3. 050.pdf (relevance: 0.780)" in lines
 
     @pytest.mark.asyncio
     async def test_agent_search_tool_no_results(self):
@@ -296,7 +296,7 @@ class TestAgentToolIntegrationMocked:
 
             assert result["result"] == "success"
             expected_message = """Found relevant product and service manual documents:
-1. test.pdf:1 (relevance: 0.950)"""
+1. test.pdf (relevance: 0.950)"""
 
             assert result["message"] == expected_message
 
