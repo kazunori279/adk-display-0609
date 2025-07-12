@@ -28,10 +28,18 @@ npm run lint         # Run ESLint with auto-fix
 ### Backend (FastAPI + Google ADK)
 
 ```bash
-cd backend/app
-# Requires GEMINI_API_KEY environment variable
-python main.py       # Start FastAPI server
-./run.sh            # Alternative: Use run script for server management
+cd backend
+# Create .env file with GOOGLE_API_KEY environment variable
+echo "GOOGLE_API_KEY=your_api_key_here" > .env
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start server (recommended - handles SSL and process management)
+./run.sh
+
+# Alternative: Direct start
+cd app && python main.py
 ```
 
 ### Index Building (Python)
@@ -57,9 +65,16 @@ Always run these commands when making changes:
 
 ```bash
 cd backend
+# Run all tests via script (includes SSL setup)
+./test.sh
+
+# Manual test execution
 pytest test/                    # Run all backend tests
 pytest test/test_show_document_integration.py  # Run specific test file
 python test/test_server_full.py # Run comprehensive server test (20 queries)
+
+# Stop any running test servers
+kill $(cat logs/test_server.pid) 2>/dev/null || true
 ```
 
 #### Comprehensive Server Test
@@ -87,10 +102,11 @@ The `test_server_full.py` script provides end-to-end testing of the entire syste
 ### Backend Assets (`backend/`)
 
 - **Core Server**: `app/main.py` - FastAPI server with SSE streaming
-- **Agent**: `app/google_search_agent/agent.py` - Gemini 2.0 Flash agent with Google Search
+- **Agent**: `app/search_agent/agent.py` - Gemini 2.0 Flash agent with document search
+- **Search System**: `app/search_agent/chromadb_search.py` - ChromaDB integration for document retrieval
 - **Static Assets**: `app/static/` - Simple ADK streaming test interface with audio support
 - **Test Suite**: `test/` - Comprehensive integration tests (4 test files)
-- **Scripts**: `run.sh` - Server management script
+- **Scripts**: `run.sh`, `test.sh` - Server management and testing scripts
 
 ### Frontend Assets (`frontend/`)
 
@@ -149,8 +165,16 @@ The `test_server_full.py` script provides end-to-end testing of the entire syste
 ### Document Processing
 
 - Multi-threaded PDF processing system (10 concurrent threads)
-- Gemini API integration with fallback models
+- Gemini API integration with fallback models (`google-genai`, `google-cloud-aiplatform`)
 - Structured data extraction using Pydantic models
 - CSV export functionality with comprehensive test coverage
 - Embedding generation pipeline for 70+ apartment manual PDFs
+- ChromaDB vector database with 34,505+ document chunks for semantic search
 - Integration with Google Cloud AI Platform for embeddings
+
+### Environment Setup
+
+- **Backend**: Requires `GOOGLE_API_KEY` in `.env` file
+- **SSL Configuration**: Automatically handled via `certifi` in run scripts
+- **Dependencies**: Python 3.12+, Node.js for frontend
+- **Port Configuration**: Backend on 8000, Frontend on 3000
